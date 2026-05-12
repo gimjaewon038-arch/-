@@ -305,6 +305,20 @@ def fetch_yahoo_raw(symbol):
         return None
 
 
+def fetch_yahoo_series(symbol, period="1y"):
+    try:
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{quote_plus(symbol)}?range={period}&interval=1d"
+        body = fetch_text(url, timeout=6)
+        data = json.loads(body)
+        result = data["chart"]["result"][0]
+        quote = result["indicators"]["quote"][0]
+        closes = [float(value) for value in quote.get("close", []) if value is not None]
+        volumes = [float(value) for value in quote.get("volume", []) if value is not None]
+        return {"close": closes, "volume": volumes}
+    except Exception:
+        return {"close": [], "volume": []}
+
+
 def build_flow_links(weakest, strongest):
     links = []
     for index, target in enumerate(strongest):
@@ -332,29 +346,155 @@ def build_flow_summary(weakest, strongest):
 
 
 def fetch_fear_greed():
-    try:
-        body = fetch_text("https://production.dataviz.cnn.io/index/fearandgreed/graphdata", timeout=5)
-        data = json.loads(body)
-        score = data["fear_and_greed"]["score"]
-        rating = data["fear_and_greed"]["rating"]
-        score_text = f"{float(score):.0f}"
+    series_symbols = ["^GSPC", "^VIX", "^CPC", "SPY", "QQQ", "IWM", "RSP", "TLT", "HYG", "LQD"]
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        series = dict(zip(series_symbols, executor.map(fetch_yahoo_series, series_symbols)))
+
+    components = [
+        score_market_momentum(series.get("^GSPC", {})),
+        score_price_strength_proxy(series),
+        score_breadth_proxy(series),
+        score_put_call(series.get("^CPC", {})),
+        score_volatility(series.get("^VIX", {})),
+        score_safe_haven(series),
+        score_junk_bond(series),
+    ]
+    valid_scores = [component for component in components if component is not None]
+
+    if not valid_scores:
+        valid_scores = fetch_fallback_fear_greed_scores()
+
+    if valid_scores:
+        score = round(sum(valid_scores) / len(valid_scores))
         return {
             "name": "공포·탐욕지수",
-            "value": score_text,
-            "change": translate_fear_greed(rating),
-            "tone": "positive" if float(score) >= 55 else "negative" if float(score) <= 45 else "mixed",
-            "note": "CNN Fear & Greed Index, 투자심리 온도계",
-            "source": "CNN",
+            "value": f"{score:.0f}",
+            "change": translate_fear_greed_score(score),
+            "tone": "positive" if score >= 56 else "negative" if score <= 44 else "mixed",
+            "note": f"CNN 7요소 기반 자체 산식, {len(valid_scores)}/7개 지표 반영",
+            "source": "자체 계산",
         }
-    except Exception:
-        return {
-            "name": "공포·탐욕지수",
-            "value": "N/A",
-            "change": "데이터 확인 필요",
-            "tone": "mixed",
-            "note": "CNN Fear & Greed Index, 투자심리 온도계",
-            "source": "CNN",
-        }
+
+    return {
+        "name": "공포·탐욕지수",
+        "value": "N/A",
+        "change": "데이터 확인 필요",
+        "tone": "mixed",
+        "note": "시장 데이터가 부족해 자체 공포·탐욕 점수를 계산하지 못했습니다.",
+        "source": "자체 계산",
+    }
+
+
+def score_market_momentum(sp500):
+    closes = sp500.get("close", [])
+    if len(closes) < 125:
+        return None
+    latest = closes[-1]
+    moving_average = sum(closes[-125:]) / 125
+    return clamp_score(50 + ((latest / moving_average) - 1) * 500)
+
+
+def score_price_strength_proxy(series):
+    returns = [
+        period_return(series.get(symbol, {}).get("close", []), 63)
+        for symbol in ("SPY", "QQQ", "IWM")
+    ]
+    returns = [value for value in returns if value is not None]
+    if not returns:
+        return None
+    return clamp_score(50 + (sum(returns) / len(returns)) * 250)
+
+
+def score_breadth_proxy(series):
+    rsp_return = period_return(series.get("RSP", {}).get("close", []), 21)
+    spy_return = period_return(series.get("SPY", {}).get("close", []), 21)
+    iwm_return = period_return(series.get("IWM", {}).get("close", []), 21)
+    if rsp_return is None or spy_return is None:
+        return None
+    breadth = ((rsp_return - spy_return) + ((iwm_return or 0) - spy_return)) / 2
+    return clamp_score(50 + breadth * 500)
+
+
+def score_put_call(put_call):
+    closes = put_call.get("close", [])
+    if not closes:
+        return None
+    return clamp_score(linear_score(closes[-1], 1.25, 0.65))
+
+
+def score_volatility(vix):
+    closes = vix.get("close", [])
+    if not closes:
+        return None
+    return clamp_score(linear_score(closes[-1], 32, 12))
+
+
+def score_safe_haven(series):
+    spy_return = period_return(series.get("SPY", {}).get("close", []), 21)
+    tlt_return = period_return(series.get("TLT", {}).get("close", []), 21)
+    if spy_return is None or tlt_return is None:
+        return None
+    return clamp_score(50 + (spy_return - tlt_return) * 250)
+
+
+def score_junk_bond(series):
+    hyg_return = period_return(series.get("HYG", {}).get("close", []), 21)
+    lqd_return = period_return(series.get("LQD", {}).get("close", []), 21)
+    if hyg_return is None or lqd_return is None:
+        return None
+    return clamp_score(50 + (hyg_return - lqd_return) * 400)
+
+
+def fetch_fallback_fear_greed_scores():
+    quote_symbols = ["SPY", "QQQ", "IWM", "^VIX", "TLT", "HYG", "LQD"]
+    with ThreadPoolExecutor(max_workers=7) as executor:
+        quotes = dict(zip(quote_symbols, executor.map(fetch_yahoo_raw, quote_symbols)))
+
+    scores = []
+    risk_changes = [
+        quotes[symbol]["changePercent"]
+        for symbol in ("SPY", "QQQ", "IWM")
+        if quotes.get(symbol)
+    ]
+    if risk_changes:
+        scores.append(clamp_score(50 + (sum(risk_changes) / len(risk_changes)) * 5))
+    if quotes.get("^VIX"):
+        scores.append(score_volatility({"close": [quotes["^VIX"]["price"]]}))
+    if quotes.get("SPY") and quotes.get("TLT"):
+        spread = quotes["SPY"]["changePercent"] - quotes["TLT"]["changePercent"]
+        scores.append(clamp_score(50 + spread * 4))
+    if quotes.get("HYG") and quotes.get("LQD"):
+        spread = quotes["HYG"]["changePercent"] - quotes["LQD"]["changePercent"]
+        scores.append(clamp_score(50 + spread * 6))
+    return [score for score in scores if score is not None]
+
+
+def period_return(closes, days):
+    if len(closes) <= days or closes[-days - 1] == 0:
+        return None
+    return (closes[-1] / closes[-days - 1]) - 1
+
+
+def linear_score(value, fear_value, greed_value):
+    if fear_value == greed_value:
+        return 50
+    return ((value - fear_value) / (greed_value - fear_value)) * 100
+
+
+def clamp_score(value):
+    return max(0, min(100, float(value)))
+
+
+def translate_fear_greed_score(score):
+    if score >= 76:
+        return "극단적 탐욕"
+    if score >= 56:
+        return "탐욕"
+    if score >= 45:
+        return "중립"
+    if score >= 25:
+        return "공포"
+    return "극단적 공포"
 
 
 def format_market_value(symbol, value):
