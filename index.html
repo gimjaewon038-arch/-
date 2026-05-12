@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>호재야호재</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="종목 사이드바 열기" title="종목 사이드바">
+      <span aria-hidden="true">☰</span>
+    </button>
+
+    <div class="app-shell sidebar-closed">
+      <aside class="sidebar" aria-label="회사 목록">
+        <button id="brandHome" class="brand" type="button" aria-label="시장 메인으로 이동">
+          <div class="brand-mark">호</div>
+          <div>
+            <p>호재야호재</p>
+            <span>Macro Research Desk</span>
+          </div>
+        </button>
+
+        <label class="search-field">
+          <span>회사 검색</span>
+          <input id="companySearch" type="search" placeholder="Ticker or company" autocomplete="off" />
+        </label>
+
+        <div id="companyList" class="company-list"></div>
+
+        <div class="source-card">
+          <span class="eyebrow">Data Stack</span>
+          <p>SEC EDGAR, FRED, FMP/Polygon, NewsAPI/Finnhub, sector ETF feeds</p>
+        </div>
+      </aside>
+
+      <main class="dashboard">
+        <button id="centerLogo" class="center-logo" type="button" aria-label="시장 메인으로 이동">
+          <span>호재야호재</span>
+        </button>
+
+        <section id="overviewPage" class="page-section">
+          <header class="topbar">
+            <div>
+              <span class="eyebrow">Market Overview</span>
+              <h1>거시경제와 섹터 사이클</h1>
+              <p>금리, 물가, 정책 뉴스와 섹터 상대강도를 한 화면에서 확인하고 어떤 영역이 강세인지 빠르게 판단합니다.</p>
+            </div>
+          </header>
+
+          <section class="overview-grid">
+            <article class="module">
+              <div class="module-heading">
+                <div>
+                  <span class="eyebrow">Macro Dashboard</span>
+                  <h2>거시경제 방향</h2>
+                </div>
+              </div>
+              <div id="overviewMacroGrid" class="macro-grid"></div>
+            </article>
+
+            <article class="module">
+              <div class="module-heading">
+                <div>
+                  <span class="eyebrow">Market News</span>
+                  <h2>최신 시장 뉴스</h2>
+                </div>
+              </div>
+              <div id="marketNews" class="headline-list"></div>
+            </article>
+
+            <article class="module market-indicators-module">
+              <div class="module-heading">
+                <div>
+                  <span class="eyebrow">Market Indicators</span>
+                  <h2>유명 지수·시장 온도계</h2>
+                </div>
+                <span class="pill">Live</span>
+              </div>
+              <div id="marketIndicators" class="indicator-grid"></div>
+            </article>
+
+            <article class="module flow-module">
+              <div class="module-heading">
+                <div>
+                  <span class="eyebrow">Daily Money Flow</span>
+                  <h2>오늘 자금 이동 추정</h2>
+                </div>
+                <span class="pill">ETF proxy</span>
+              </div>
+              <div id="moneyFlow" class="money-flow"></div>
+            </article>
+
+            <article class="module sector-chart-module">
+              <div class="module-heading">
+                <div>
+                  <span class="eyebrow">Sector Cycle</span>
+                  <h2>섹터 강약 그래프</h2>
+                </div>
+                <span class="pill">Relative strength</span>
+              </div>
+              <div id="sectorChart" class="sector-chart"></div>
+            </article>
+          </section>
+        </section>
+
+        <section id="detailPage" class="page-section hidden">
+          <header class="topbar">
+          <div>
+            <span class="eyebrow">미국 상장사 자동 재평가</span>
+            <h1 id="companyTitle">Company</h1>
+            <p id="companySubtitle"></p>
+          </div>
+          <div class="topbar-actions">
+            <div class="popover-wrap">
+              <button id="timelineToggle" class="button icon-button secondary" type="button" aria-label="이벤트 타임라인" title="이벤트 타임라인" aria-expanded="false" aria-controls="timelinePopover">
+                <span aria-hidden="true">◷</span>
+              </button>
+              <div id="timelinePopover" class="timeline-popover" role="dialog" aria-label="이벤트 타임라인">
+                <div class="module-heading">
+                  <div>
+                    <span class="eyebrow">News & Guidance Timeline</span>
+                    <h2>이벤트 타임라인</h2>
+                  </div>
+                  <span id="lastUpdated" class="pill"></span>
+                </div>
+                <div id="timeline" class="timeline"></div>
+              </div>
+            </div>
+            <button id="applyRevaluation" class="button primary" type="button">
+              <span aria-hidden="true">●</span>
+              재평가 반영
+            </button>
+          </div>
+          </header>
+
+          <section class="score-grid" aria-label="점수 요약">
+          <article class="score-panel composite">
+            <span class="eyebrow">Composite Score</span>
+            <div class="score-hero">
+              <strong id="compositeScore">0</strong>
+              <span id="scoreDelta">0</span>
+            </div>
+            <p id="compositeSummary"></p>
+            <div class="meter">
+              <span id="compositeMeter"></span>
+            </div>
+          </article>
+
+          <article class="score-panel">
+            <span class="eyebrow">Company Factors</span>
+            <div id="companyScores" class="factor-list"></div>
+            <div id="companyFactorDetail" class="factor-detail"></div>
+          </article>
+
+          <article class="score-panel">
+            <span class="eyebrow">External Environment</span>
+            <div id="environmentScores" class="factor-list"></div>
+            <div id="environmentFactorDetail" class="factor-detail"></div>
+          </article>
+          </section>
+
+          <section class="content-grid">
+          <article class="module">
+            <div class="module-heading">
+              <div>
+                <span class="eyebrow">Company Macro Impact</span>
+                <h2>거시경제가 이 종목에 미치는 영향</h2>
+              </div>
+            </div>
+            <div id="macroGrid" class="macro-grid"></div>
+          </article>
+
+          <article class="module latest-module">
+            <div class="module-heading">
+              <div>
+                <span class="eyebrow">Live Sources</span>
+                <h2>최신 뉴스 헤드라인</h2>
+              </div>
+            </div>
+            <div class="news-columns">
+              <section>
+                <h3>선택 종목 뉴스</h3>
+                <div id="companyNews" class="headline-list"></div>
+              </section>
+              <section>
+                <h3>관련 섹터·매크로 뉴스</h3>
+                <div id="relatedNews" class="headline-list"></div>
+              </section>
+            </div>
+          </article>
+
+          <article class="module memo-module">
+            <div class="module-heading">
+              <div>
+                <span class="eyebrow">AI Revaluation Memo</span>
+                <h2>재평가 메모</h2>
+              </div>
+            </div>
+            <div id="memo" class="memo"></div>
+          </article>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <footer class="disclaimer">
+      호재야호재는 투자 판단 보조용 정보 도구이며, 투자 자문이나 매수·매도 추천이 아닙니다.
+    </footer>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
