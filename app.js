@@ -152,6 +152,59 @@ const macroState = {
   ism: { label: "Cycle/Oil", value: "WTI ~$100", trend: "유가 충격", interpretation: "에너지 섹터에는 우호적이지만 소비재와 운송·성장주 마진에는 부담" },
 };
 
+const macroReports = [
+  {
+    name: "CPI",
+    date: "2026-05-12",
+    value: "3.8%",
+    previous: "3.5%",
+    consensus: "3.6%",
+    tone: "negative",
+    verdict: "시장에 부정적",
+    reason: "헤드라인 CPI가 예상치 3.6%와 전월 3.5%를 모두 웃돌았습니다. 인플레이션 재가열은 금리 인하 기대를 늦추고 성장주 할인율을 높입니다.",
+  },
+  {
+    name: "Core CPI",
+    date: "2026-05-12",
+    value: "3.2%",
+    previous: "3.1%",
+    consensus: "3.1%",
+    tone: "negative",
+    verdict: "성장주에 부담",
+    reason: "근원 물가가 예상보다 끈적하면 연준이 빠르게 완화하기 어렵습니다. 고PER 기술주와 소형 성장주에는 멀티플 부담으로 반영했습니다.",
+  },
+  {
+    name: "PPI",
+    date: "2026-05-11",
+    value: "2.9%",
+    previous: "2.6%",
+    consensus: "2.7%",
+    tone: "negative",
+    verdict: "마진에 부담",
+    reason: "생산자물가가 예상보다 높으면 기업 원가 부담이 커질 수 있습니다. 가격 전가력이 약한 소비재·산업재에는 수익성 압박입니다.",
+  },
+  {
+    name: "Nonfarm Payrolls",
+    date: "2026-05-08",
+    value: "214K",
+    previous: "188K",
+    consensus: "175K",
+    tone: "mixed",
+    verdict: "해석 엇갈림",
+    reason: "고용은 경기 침체 우려를 낮추지만, 너무 강한 고용은 임금과 서비스 물가 압력을 남깁니다. 경기민감주는 일부 우호, 금리민감주는 부담입니다.",
+  },
+  {
+    name: "FOMC",
+    date: "2026-05-06",
+    value: "3.50-3.75%",
+    previous: "3.50-3.75%",
+    consensus: "동결",
+    tone: "mixed",
+    verdict: "동결 장기화",
+    reason: "기준금리 동결 자체는 예상과 같지만, 물가 재상승으로 인하 시점이 뒤로 밀릴 가능성이 커졌습니다. 은행에는 일부 방어적이고 장기 성장주에는 부담입니다.",
+  },
+];
+
 const nasdaq100Constituents = [
   ["AAPL", "Apple", "Technology Hardware"],
   ["ABNB", "Airbnb", "Travel Platform"],
@@ -975,6 +1028,30 @@ function renderMacro(containerId = "#macroGrid") {
   const grid = document.querySelector(containerId);
   if (!grid) return;
   grid.innerHTML = "";
+  if (containerId === "#overviewMacroGrid") {
+    grid.classList.add("macro-report-grid");
+    grid.innerHTML = macroReports
+      .map(
+        (item) => `
+          <article class="macro-report-card ${escapeHtml(item.tone)}" tabindex="0">
+            <div>
+              <span>${escapeHtml(item.name)} · ${escapeHtml(item.date)}</span>
+              <strong>${escapeHtml(item.value)}</strong>
+            </div>
+            <em>${escapeHtml(item.verdict)}</em>
+            <p>이전 ${escapeHtml(item.previous)} · 예상 ${escapeHtml(item.consensus)}</p>
+            <div class="macro-report-tooltip" role="tooltip">
+              <strong>${escapeHtml(item.name)} 해석</strong>
+              <p>${escapeHtml(item.reason)}</p>
+              <small>발표 ${escapeHtml(item.date)} · 실제 ${escapeHtml(item.value)} · 예상 ${escapeHtml(item.consensus)} · 이전 ${escapeHtml(item.previous)}</small>
+            </div>
+          </article>
+        `,
+      )
+      .join("");
+    return;
+  }
+  grid.classList.remove("macro-report-grid");
   Object.values(macroState).forEach((item) => {
     const card = document.createElement("div");
     card.className = "macro-card";
