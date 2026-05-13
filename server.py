@@ -151,10 +151,11 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
     def handle_price(self, query):
         params = parse_qs(query)
         ticker = normalize_ticker(params.get("ticker", [""])[0])
+        range_key = params.get("range", ["3M"])[0].strip().upper()
         if not ticker:
             self.write_json({"error": "ticker is required"}, status=400)
             return
-        self.write_json(fetch_price_snapshot(ticker))
+        self.write_json(fetch_price_snapshot(ticker, range_key))
 
 
 MARKET_SYMBOLS = [
@@ -395,9 +396,23 @@ def fetch_yahoo_series(symbol, period="1y"):
         return {"close": [], "volume": []}
 
 
-def fetch_price_snapshot(ticker):
+PRICE_RANGES = {
+    "1D": {"range": "1d", "interval": "5m", "label": "1일"},
+    "5D": {"range": "5d", "interval": "15m", "label": "5일"},
+    "1M": {"range": "1mo", "interval": "1d", "label": "1개월"},
+    "3M": {"range": "3mo", "interval": "1d", "label": "3개월"},
+    "6M": {"range": "6mo", "interval": "1d", "label": "6개월"},
+    "1Y": {"range": "1y", "interval": "1d", "label": "1년"},
+}
+
+
+def fetch_price_snapshot(ticker, range_key="3M"):
+    selected_range = PRICE_RANGES.get(range_key, PRICE_RANGES["3M"])
     try:
-        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{quote_plus(ticker)}?range=3mo&interval=1d"
+        url = (
+            f"https://query1.finance.yahoo.com/v8/finance/chart/{quote_plus(ticker)}"
+            f"?range={selected_range['range']}&interval={selected_range['interval']}"
+        )
         body = fetch_text(url, timeout=6)
         data = json.loads(body)
         result = data["chart"]["result"][0]
@@ -416,6 +431,8 @@ def fetch_price_snapshot(ticker):
         change_percent = None if change is None else (change / float(previous)) * 100
         return {
             "ticker": ticker,
+            "range": range_key if range_key in PRICE_RANGES else "3M",
+            "rangeLabel": selected_range["label"],
             "price": round(float(price), 2) if price is not None else None,
             "currency": meta.get("currency", "USD"),
             "change": round(change, 2) if change is not None else None,
@@ -427,6 +444,8 @@ def fetch_price_snapshot(ticker):
     except Exception as error:
         return {
             "ticker": ticker,
+            "range": range_key if range_key in PRICE_RANGES else "3M",
+            "rangeLabel": selected_range["label"],
             "price": None,
             "currency": "USD",
             "change": None,

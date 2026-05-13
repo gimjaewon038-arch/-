@@ -608,8 +608,17 @@ let selectedCompanyFactor = "growth";
 let selectedEnvironmentFactor = "macroRegime";
 let expandedNewsLists = {};
 let universeLoaded = false;
+let selectedPriceRange = "3M";
 const companyFactorKeys = ["growth", "profitability", "fundamentals", "guidance", "companyRisk"];
 const environmentFactorKeys = ["macroRegime", "rateSensitivity", "policyImpact", "sectorMomentum", "cycleFit"];
+const priceRangeOptions = [
+  ["1D", "일"],
+  ["5D", "5일"],
+  ["1M", "월"],
+  ["3M", "3월"],
+  ["6M", "6월"],
+  ["1Y", "년"],
+];
 
 function clamp(score) {
   return Math.max(0, Math.min(100, Math.round(score)));
@@ -1227,7 +1236,7 @@ async function fetchNews(company, type) {
 }
 
 async function fetchPriceSnapshot(company) {
-  const response = await fetch(`/api/price?ticker=${encodeURIComponent(company.ticker)}`);
+  const response = await fetch(`/api/price?ticker=${encodeURIComponent(company.ticker)}&range=${encodeURIComponent(selectedPriceRange)}`);
   if (!response.ok) {
     throw new Error(`Price request failed: ${response.status}`);
   }
@@ -1257,7 +1266,7 @@ function renderSparkline(history) {
   const last = values[values.length - 1];
   const tone = last >= first ? "positive" : "negative";
   return `
-    <svg class="price-chart ${tone}" viewBox="0 0 ${width} ${height}" role="img" aria-label="최근 3개월 주가 그래프">
+    <svg class="price-chart ${tone}" viewBox="0 0 ${width} ${height}" role="img" aria-label="선택 기간 주가 그래프">
       <polygon points="${area}" />
       <polyline points="${points}" />
       <text x="${padding}" y="24">$${max.toFixed(2)}</text>
@@ -1286,6 +1295,15 @@ async function renderPriceSnapshot(company) {
         ? "변동률 확인 필요"
         : `${change >= 0 ? "+" : ""}${Number(change).toFixed(2)} (${change >= 0 ? "+" : ""}${Number(changePercent).toFixed(2)}%)`;
     const tone = Number(change || 0) >= 0 ? "positive" : "negative";
+    const rangeControls = priceRangeOptions
+      .map(
+        ([value, label]) => `
+          <button class="range-button ${selectedPriceRange === value ? "active" : ""}" type="button" data-price-range="${value}" aria-pressed="${selectedPriceRange === value}">
+            ${label}
+          </button>
+        `,
+      )
+      .join("");
     const targets = (data.targets || [])
       .map(
         (item) => `
@@ -1300,10 +1318,13 @@ async function renderPriceSnapshot(company) {
       <section class="price-main">
         <div class="price-header">
           <div>
-            <span>${escapeHtml(company.ticker)} · ${escapeHtml(data.currency || "USD")}</span>
+            <span>${escapeHtml(company.ticker)} · ${escapeHtml(data.currency || "USD")} · ${escapeHtml(data.rangeLabel || selectedPriceRange)}</span>
             <strong>${data.price ? `$${Number(data.price).toFixed(2)}` : "N/A"}</strong>
           </div>
           <em class="${tone}">${escapeHtml(changeLabel)}</em>
+        </div>
+        <div class="range-control" aria-label="주가 차트 기간 선택">
+          ${rangeControls}
         </div>
         ${renderSparkline(data.history || [])}
       </section>
@@ -1612,6 +1633,15 @@ document.addEventListener("click", (event) => {
     const key = toggle.dataset.newsToggle;
     expandedNewsLists[key] = !expandedNewsLists[key];
     render();
+    return;
+  }
+
+  const priceRange = event.target.closest("[data-price-range]");
+  if (priceRange) {
+    event.preventDefault();
+    event.stopPropagation();
+    selectedPriceRange = priceRange.dataset.priceRange;
+    renderPriceSnapshot(getCompany());
     return;
   }
 

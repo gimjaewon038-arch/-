@@ -621,6 +621,32 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   background: #fff;
 }
 
+.range-control {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.range-button {
+  min-width: 42px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: #2d3b38;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.range-button:hover,
+.range-button.active {
+  border-color: #b7d8d1;
+  background: #e8f5f2;
+  color: var(--accent-strong);
+}
+
 .price-header em.positive {
   color: var(--green);
 }
