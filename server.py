@@ -19,7 +19,7 @@ UNIVERSE_CACHE = None
 class ResearchDeskHandler(SimpleHTTPRequestHandler):
     def do_HEAD(self):
         parsed = urlparse(self.path)
-        if parsed.path in {"/api/news", "/api/indices", "/api/flows", "/api/universe"}:
+        if parsed.path in {"/api/news", "/api/indices", "/api/flows", "/api/universe", "/api/price"}:
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
@@ -39,6 +39,9 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
             return
         if parsed.path == "/api/universe":
             self.handle_universe()
+            return
+        if parsed.path == "/api/price":
+            self.handle_price(parsed.query)
             return
         super().do_GET()
 
@@ -145,6 +148,14 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
             UNIVERSE_CACHE = sorted(merged.values(), key=lambda item: item["ticker"])
         self.write_json({"items": UNIVERSE_CACHE, "count": len(UNIVERSE_CACHE)})
 
+    def handle_price(self, query):
+        params = parse_qs(query)
+        ticker = normalize_ticker(params.get("ticker", [""])[0])
+        if not ticker:
+            self.write_json({"error": "ticker is required"}, status=400)
+            return
+        self.write_json(fetch_price_snapshot(ticker))
+
 
 MARKET_SYMBOLS = [
     {"symbol": "^GSPC", "name": "S&P 500", "note": "미국 대형주 전반의 위험선호 기준, 종합 점수의 시장 베타 기준"},
@@ -179,6 +190,59 @@ FLOW_SYMBOLS = [
 
 SP500_URL = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 IWM_HOLDINGS_URL = "https://www.ishares.com/us/products/239710/ishares-russell-2000-etf/1467271812596.ajax?fileType=csv&fileName=IWM_holdings&dataType=fund"
+
+BANK_PRICE_TARGETS = {
+    "AAPL": [
+        {"bank": "UBS", "target": 296},
+        {"bank": "TD Cowen", "target": 335},
+        {"bank": "Wedbush", "target": 350},
+        {"bank": "Barclays", "target": 253},
+    ],
+    "NVDA": [
+        {"bank": "Citi", "target": 300},
+        {"bank": "Susquehanna", "target": 275},
+        {"bank": "Rosenblatt", "target": 325},
+        {"bank": "Cantor Fitzgerald", "target": 300},
+        {"bank": "Raymond James", "target": 323},
+    ],
+    "TSLA": [
+        {"bank": "UBS", "target": 364},
+        {"bank": "Canaccord Genuity", "target": 450},
+    ],
+    "JPM": [
+        {"bank": "Evercore ISI", "target": 340},
+        {"bank": "Truist", "target": 332},
+    ],
+    "XOM": [
+        {"bank": "RBC Capital", "target": 180},
+        {"bank": "UBS", "target": 174},
+    ],
+    "HIMS": [
+        {"bank": "JPMorgan", "target": 35},
+        {"bank": "BofA Securities", "target": 30},
+    ],
+    "OSCR": [
+        {"bank": "Jefferies", "target": 16},
+        {"bank": "UBS", "target": 17},
+        {"bank": "Barclays", "target": 18},
+    ],
+    "PLTR": [
+        {"bank": "Citigroup", "target": 225},
+        {"bank": "Morgan Stanley", "target": 205},
+        {"bank": "BofA Securities", "target": 255},
+        {"bank": "Truist", "target": 223},
+    ],
+    "CRWD": [
+        {"bank": "Wells Fargo", "target": 525},
+        {"bank": "Mizuho", "target": 520},
+        {"bank": "RBC Capital", "target": 550},
+    ],
+    "APP": [
+        {"bank": "Macquarie", "target": 730},
+        {"bank": "UBS", "target": 750},
+        {"bank": "Needham", "target": 700},
+    ],
+}
 
 
 def fetch_sp500_universe():
@@ -329,6 +393,49 @@ def fetch_yahoo_series(symbol, period="1y"):
         return {"close": closes, "volume": volumes}
     except Exception:
         return {"close": [], "volume": []}
+
+
+def fetch_price_snapshot(ticker):
+    try:
+        url = f"https://query1.finance.yahoo.com/v8/finance/chart/{quote_plus(ticker)}?range=3mo&interval=1d"
+        body = fetch_text(url, timeout=6)
+        data = json.loads(body)
+        result = data["chart"]["result"][0]
+        meta = result["meta"]
+        quote = result["indicators"]["quote"][0]
+        timestamps = result.get("timestamp", [])
+        closes = quote.get("close", [])
+        history = []
+        for timestamp, close in zip(timestamps, closes):
+            if close is None:
+                continue
+            history.append({"date": str(timestamp), "close": round(float(close), 2)})
+        price = meta.get("regularMarketPrice")
+        previous = meta.get("chartPreviousClose") or meta.get("previousClose")
+        change = None if price is None or previous in (None, 0) else float(price) - float(previous)
+        change_percent = None if change is None else (change / float(previous)) * 100
+        return {
+            "ticker": ticker,
+            "price": round(float(price), 2) if price is not None else None,
+            "currency": meta.get("currency", "USD"),
+            "change": round(change, 2) if change is not None else None,
+            "changePercent": round(change_percent, 2) if change_percent is not None else None,
+            "history": history[-64:],
+            "targets": BANK_PRICE_TARGETS.get(ticker, []),
+            "targetSource": "최근 공개 애널리스트 리포트 스냅샷",
+        }
+    except Exception as error:
+        return {
+            "ticker": ticker,
+            "price": None,
+            "currency": "USD",
+            "change": None,
+            "changePercent": None,
+            "history": [],
+            "targets": BANK_PRICE_TARGETS.get(ticker, []),
+            "targetSource": "최근 공개 애널리스트 리포트 스냅샷",
+            "error": str(error),
+        }
 
 
 def build_flow_links(weakest, strongest):

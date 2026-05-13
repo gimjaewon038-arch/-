@@ -571,6 +571,141 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   gap: 12px;
 }
 
+.price-module {
+  margin-bottom: 16px;
+}
+
+.price-snapshot {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(220px, 0.7fr);
+  gap: 14px;
+}
+
+.price-main,
+.target-list {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8faf9;
+  padding: 14px;
+}
+
+.price-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.price-header span,
+.target-heading span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.price-header strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.price-header em {
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.price-header em.positive {
+  color: var(--green);
+}
+
+.price-header em.negative {
+  color: var(--red);
+}
+
+.price-chart {
+  width: 100%;
+  min-height: 210px;
+  display: block;
+  overflow: visible;
+}
+
+.price-chart polygon {
+  fill: rgba(15, 118, 110, 0.11);
+}
+
+.price-chart polyline {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.price-chart.negative polygon {
+  fill: rgba(185, 28, 28, 0.1);
+}
+
+.price-chart.negative polyline {
+  stroke: var(--red);
+}
+
+.price-chart text {
+  fill: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.price-chart-empty {
+  min-height: 210px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.target-list {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.target-heading {
+  margin-bottom: 4px;
+}
+
+.target-heading strong {
+  display: block;
+  font-size: 14px;
+}
+
+.target-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
+}
+
+.target-row span {
+  color: #2d3b38;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.target-row strong {
+  font-size: 16px;
+}
+
 .latest-module {
   min-width: 0;
   grid-row: span 2;
@@ -1154,6 +1289,7 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   .score-grid,
   .content-grid,
   .overview-grid,
+  .price-snapshot,
   .brief-grid,
   .indicator-grid,
   .flow-board,
@@ -1207,6 +1343,7 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
 
   .company-list,
   .macro-grid,
+  .price-snapshot,
   .brief-grid,
   .headline {
     grid-template-columns: 1fr;

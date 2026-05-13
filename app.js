@@ -1226,6 +1226,101 @@ async function fetchNews(company, type) {
   return response.json();
 }
 
+async function fetchPriceSnapshot(company) {
+  const response = await fetch(`/api/price?ticker=${encodeURIComponent(company.ticker)}`);
+  if (!response.ok) {
+    throw new Error(`Price request failed: ${response.status}`);
+  }
+  return response.json();
+}
+
+function renderSparkline(history) {
+  if (!history.length) {
+    return `<div class="price-chart-empty">주가 그래프 데이터를 불러오지 못했습니다.</div>`;
+  }
+  const width = 720;
+  const height = 210;
+  const padding = 18;
+  const values = history.map((point) => point.close);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const span = max - min || 1;
+  const points = values
+    .map((value, index) => {
+      const x = padding + (index / Math.max(values.length - 1, 1)) * (width - padding * 2);
+      const y = height - padding - ((value - min) / span) * (height - padding * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  const area = `${padding},${height - padding} ${points} ${width - padding},${height - padding}`;
+  const first = values[0];
+  const last = values[values.length - 1];
+  const tone = last >= first ? "positive" : "negative";
+  return `
+    <svg class="price-chart ${tone}" viewBox="0 0 ${width} ${height}" role="img" aria-label="최근 3개월 주가 그래프">
+      <polygon points="${area}" />
+      <polyline points="${points}" />
+      <text x="${padding}" y="24">$${max.toFixed(2)}</text>
+      <text x="${padding}" y="${height - 8}">$${min.toFixed(2)}</text>
+    </svg>
+  `;
+}
+
+function renderPriceSnapshotState(message) {
+  const container = document.querySelector("#priceSnapshot");
+  if (container) {
+    container.innerHTML = `<div class="headline-placeholder">${escapeHtml(message)}</div>`;
+  }
+}
+
+async function renderPriceSnapshot(company) {
+  const tickerAtRequest = company.ticker;
+  renderPriceSnapshotState(`${company.ticker} 현재 주가와 목표주가를 불러오는 중입니다.`);
+  try {
+    const data = await fetchPriceSnapshot(company);
+    if (selectedTicker !== tickerAtRequest) return;
+    const change = data.change;
+    const changePercent = data.changePercent;
+    const changeLabel =
+      change === null || change === undefined || changePercent === null || changePercent === undefined
+        ? "변동률 확인 필요"
+        : `${change >= 0 ? "+" : ""}${Number(change).toFixed(2)} (${change >= 0 ? "+" : ""}${Number(changePercent).toFixed(2)}%)`;
+    const tone = Number(change || 0) >= 0 ? "positive" : "negative";
+    const targets = (data.targets || [])
+      .map(
+        (item) => `
+          <article class="target-row">
+            <span>${escapeHtml(item.bank)}</span>
+            <strong>$${Number(item.target).toFixed(0)}</strong>
+          </article>
+        `,
+      )
+      .join("");
+    document.querySelector("#priceSnapshot").innerHTML = `
+      <section class="price-main">
+        <div class="price-header">
+          <div>
+            <span>${escapeHtml(company.ticker)} · ${escapeHtml(data.currency || "USD")}</span>
+            <strong>${data.price ? `$${Number(data.price).toFixed(2)}` : "N/A"}</strong>
+          </div>
+          <em class="${tone}">${escapeHtml(changeLabel)}</em>
+        </div>
+        ${renderSparkline(data.history || [])}
+      </section>
+      <section class="target-list">
+        <div class="target-heading">
+          <strong>은행별 목표주가</strong>
+          <span>${escapeHtml(data.targetSource || "최근 공개 리포트")}</span>
+        </div>
+        ${targets || `<div class="headline-placeholder">은행별 목표주가 데이터 준비중</div>`}
+      </section>
+    `;
+  } catch (error) {
+    if (selectedTicker !== tickerAtRequest) return;
+    renderPriceSnapshotState("현재 주가 API 연결이 필요합니다. server.py로 실행하면 그래프와 목표주가가 표시됩니다.");
+  }
+}
+
 async function renderMarketNews() {
   const container = document.querySelector("#marketNews");
   renderHeadlineState(container, "시장 전체 최신 뉴스 헤드라인을 불러오는 중입니다.");
@@ -1480,6 +1575,7 @@ function render() {
 
   renderFactorSections(company, scores);
   renderTimeline(company);
+  renderPriceSnapshot(company);
   renderCompanyMacroImpact(company, scores);
   renderLatestNews(company);
   renderMemo(company, scores, composite);
