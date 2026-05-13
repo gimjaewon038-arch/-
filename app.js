@@ -508,6 +508,33 @@ const latestRevaluationNotes = {
   IONQ: "양자컴퓨팅 장기 기대는 유지되지만 금리 상승기에는 현금흐름 가시성이 낮은 초기 성장주 할인폭이 커져 점수를 낮췄습니다.",
 };
 
+const marketBriefCards = [
+  {
+    label: "시장 레짐",
+    value: "인플레 재가열",
+    tone: "negative",
+    text: "April CPI 3.8%, 10년물 4.45%, 유가 100달러 부근을 반영해 고PER 성장주와 소비 민감주 할인율을 높였습니다.",
+  },
+  {
+    label: "상대 강세",
+    value: "Energy / AI / Cyber",
+    tone: "positive",
+    text: "에너지는 유가와 현금흐름, AI·사이버보안은 실적 기대와 구조적 수요가 점수를 지지합니다.",
+  },
+  {
+    label: "상대 약세",
+    value: "EV / Digital Health / High Growth",
+    tone: "negative",
+    text: "금리, 비용, GLP-1 전략 전환, 소비 둔화 리스크를 반영해 TSLA, HIMS, 장기 성장 바스켓을 보수적으로 조정했습니다.",
+  },
+  {
+    label: "점수 반영",
+    value: "종목별 차등",
+    tone: "mixed",
+    text: "AAPL·OSCR·XOM은 상향 요인이 컸고, HIMS·TSLA·IONQ는 가이던스와 외부 환경 부담을 더 크게 반영했습니다.",
+  },
+];
+
 const eventTemplates = {
   company: {
     title: "가이던스 업데이트",
@@ -796,6 +823,22 @@ function renderMacro(containerId = "#macroGrid") {
   });
 }
 
+function renderMarketBrief() {
+  const grid = document.querySelector("#marketBrief");
+  if (!grid) return;
+  grid.innerHTML = marketBriefCards
+    .map(
+      (item) => `
+        <article class="brief-card ${escapeHtml(item.tone)}">
+          <span>${escapeHtml(item.label)}</span>
+          <strong>${escapeHtml(item.value)}</strong>
+          <p>${escapeHtml(item.text)}</p>
+        </article>
+      `,
+    )
+    .join("");
+}
+
 function impactTone(value) {
   if (value > 0) return "positive";
   if (value < 0) return "negative";
@@ -924,7 +967,7 @@ async function renderMarketIndicators() {
       throw new Error(`Indices request failed: ${response.status}`);
     }
     const data = await response.json();
-    container.innerHTML = (data.items || [])
+    const cards = (data.items || [])
       .map(
         (item) => `
           <article class="indicator-card ${escapeHtml(item.tone || "mixed")}">
@@ -936,6 +979,10 @@ async function renderMarketIndicators() {
         `,
       )
       .join("");
+    container.innerHTML = `
+      <p class="module-note">공포·탐욕지수는 CNN 7요소 구조를 참고한 자체 산식이며, 나머지 지수는 Yahoo Finance 실시간 proxy입니다.</p>
+      ${cards}
+    `;
   } catch (error) {
     renderIndicatorState("시장 지수 API 연결이 필요합니다. server.py로 실행하면 지수 카드가 표시됩니다.");
   }
@@ -988,6 +1035,7 @@ async function renderMoneyFlow() {
       )
       .join("");
     container.innerHTML = `
+      <p class="flow-summary">홈페이지 업데이트 관점: 유가·에너지와 방어 현금흐름이 상대적으로 강하고, 고금리에는 장기 성장·소비 민감 영역을 보수적으로 봅니다.</p>
       <p class="flow-summary">${escapeHtml(data.summary || "")}</p>
       <div class="flow-board">
         <section class="flow-column">
@@ -1058,7 +1106,9 @@ async function renderLatestNews(company) {
 
 function renderSectorChart() {
   const chart = document.querySelector("#sectorChart");
-  chart.innerHTML = "";
+  chart.innerHTML = `
+    <p class="flow-summary">2026-05-13 기준 섹터 순환: 에너지와 AI·사이버보안은 강세, EV·고성장·디지털 헬스는 금리와 비용 부담으로 약세입니다.</p>
+  `;
   [...sectors]
     .sort((a, b) => b.relative - a.relative)
     .forEach((sector) => {
@@ -1236,6 +1286,7 @@ function render() {
   renderCompanyList();
 
   if (isOverview) {
+    renderMarketBrief();
     renderMacro("#overviewMacroGrid");
     renderSectorChart();
     renderMarketIndicators();

@@ -36,7 +36,7 @@
 
         <div class="source-card">
           <span class="eyebrow">Data Stack</span>
-          <p>SEC EDGAR, FRED, FMP/Polygon, NewsAPI/Finnhub, sector ETF feeds</p>
+          <p>2026-05-13 기준: Google News, Yahoo Finance, BLS CPI, 기업 실적·공시, ETF proxy를 결합해 재평가합니다.</p>
         </div>
       </aside>
 
@@ -50,17 +50,29 @@
             <div>
               <span class="eyebrow">Market Overview</span>
               <h1>거시경제와 섹터 사이클</h1>
-              <p>금리, 물가, 정책 뉴스와 섹터 상대강도를 한 화면에서 확인하고 어떤 영역이 강세인지 빠르게 판단합니다.</p>
+              <p>2026-05-13 업데이트: Hot CPI, 유가 충격, 장기금리 상승, AI 실적 기대, 에너지 강세를 한 화면에서 다시 정리했습니다.</p>
             </div>
           </header>
 
           <section class="overview-grid">
+            <article class="module market-brief-module">
+              <div class="module-heading">
+                <div>
+                  <span class="eyebrow">Today Revaluation</span>
+                  <h2>오늘의 시장 재평가 요약</h2>
+                </div>
+                <span class="pill">2026-05-13</span>
+              </div>
+              <div id="marketBrief" class="brief-grid"></div>
+            </article>
+
             <article class="module">
               <div class="module-heading">
                 <div>
                   <span class="eyebrow">Macro Dashboard</span>
                   <h2>거시경제 방향</h2>
                 </div>
+                <span class="pill">CPI/Oil/Rates</span>
               </div>
               <div id="overviewMacroGrid" class="macro-grid"></div>
             </article>
@@ -71,6 +83,7 @@
                   <span class="eyebrow">Market News</span>
                   <h2>최신 시장 뉴스</h2>
                 </div>
+                <span class="pill">번역·이미지</span>
               </div>
               <div id="marketNews" class="headline-list"></div>
             </article>
@@ -81,7 +94,7 @@
                   <span class="eyebrow">Market Indicators</span>
                   <h2>유명 지수·시장 온도계</h2>
                 </div>
-                <span class="pill">Live</span>
+                <span class="pill">Live + 자체 산식</span>
               </div>
               <div id="marketIndicators" class="indicator-grid"></div>
             </article>
@@ -92,7 +105,7 @@
                   <span class="eyebrow">Daily Money Flow</span>
                   <h2>오늘 자금 이동 추정</h2>
                 </div>
-                <span class="pill">ETF proxy</span>
+                <span class="pill">ETF proxy · May 13</span>
               </div>
               <div id="moneyFlow" class="money-flow"></div>
             </article>
@@ -103,7 +116,7 @@
                   <span class="eyebrow">Sector Cycle</span>
                   <h2>섹터 강약 그래프</h2>
                 </div>
-                <span class="pill">Relative strength</span>
+                <span class="pill">Updated rotation</span>
               </div>
               <div id="sectorChart" class="sector-chart"></div>
             </article>
@@ -211,7 +224,7 @@
     </div>
 
     <footer class="disclaimer">
-      호재야호재는 투자 판단 보조용 정보 도구이며, 투자 자문이나 매수·매도 추천이 아닙니다.
+      호재야호재는 투자 판단 보조용 정보 도구이며, 투자 자문이나 매수·매도 추천이 아닙니다. 홈 화면과 점수는 2026-05-13 최신 뉴스·공시·매크로 흐름 기준으로 갱신되었습니다.
     </footer>
 
     <script src="./app.js"></script>

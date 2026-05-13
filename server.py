@@ -50,7 +50,7 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
         news_type = params.get("type", ["company"])[0].strip()
 
         if news_type == "market":
-            search = "Nasdaq 100 stocks macro economy Federal Reserve earnings guidance when:30d"
+            search = "April 2026 CPI oil prices Federal Reserve rates AI stocks energy sector rotation earnings guidance when:7d"
         elif news_type == "related":
             search = f'"{sector}" stocks OR "{sector}" earnings OR "{sector}" guidance macro rates policy when:30d'
         else:

@@ -536,6 +536,56 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   gap: 16px;
 }
 
+.market-brief-module {
+  grid-column: 1 / -1;
+}
+
+.brief-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.brief-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8faf9;
+  padding: 14px;
+}
+
+.brief-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.brief-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 18px;
+}
+
+.brief-card p,
+.module-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.brief-card.positive {
+  border-left: 4px solid var(--green);
+}
+
+.brief-card.negative {
+  border-left: 4px solid var(--red);
+}
+
+.brief-card.mixed {
+  border-left: 4px solid var(--amber);
+}
+
 .market-indicators-module {
   grid-column: 1 / -1;
 }
@@ -548,6 +598,11 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+.indicator-grid .module-note {
+  grid-column: 1 / -1;
+  margin: 0;
 }
 
 .indicator-card {
@@ -1053,6 +1108,7 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   .score-grid,
   .content-grid,
   .overview-grid,
+  .brief-grid,
   .indicator-grid,
   .flow-board,
   .memo,
@@ -1105,6 +1161,7 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
 
   .company-list,
   .macro-grid,
+  .brief-grid,
   .headline {
     grid-template-columns: 1fr;
   }
