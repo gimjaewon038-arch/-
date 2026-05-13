@@ -97,10 +97,16 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def handle_indices(self):
-        with ThreadPoolExecutor(max_workers=8) as executor:
+        with ThreadPoolExecutor(max_workers=12) as executor:
             quotes = list(executor.map(fetch_yahoo_quote, MARKET_SYMBOLS))
         fear_greed = fetch_fear_greed()
-        self.write_json({"items": [fear_greed, *[quote for quote in quotes if quote]]})
+        self.write_json(
+            {
+                "asOf": "2026-05-13",
+                "summary": "Hot CPI와 유가 상승은 금리·물가 부담을 키우고, AI/나스닥과 에너지 강세는 위험선호를 지지합니다. Russell 2000과 고성장 ETF는 금리 민감도를 함께 확인합니다.",
+                "items": [fear_greed, *[quote for quote in quotes if quote]],
+            }
+        )
 
     def handle_flows(self):
         with ThreadPoolExecutor(max_workers=12) as executor:
@@ -141,12 +147,18 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
 
 
 MARKET_SYMBOLS = [
-    {"symbol": "^GSPC", "name": "S&P 500", "note": "미국 대형주 전반의 위험선호 기준"},
-    {"symbol": "^IXIC", "name": "Nasdaq Composite", "note": "성장주와 기술주 투자심리"},
-    {"symbol": "^DJI", "name": "Dow Jones", "note": "우량 대형 가치주의 흐름"},
-    {"symbol": "^VIX", "name": "VIX", "note": "옵션시장 변동성, 높을수록 공포 확대"},
-    {"symbol": "^TNX", "name": "10Y Treasury Yield", "note": "장기금리와 성장주 할인율 압력"},
-    {"symbol": "QQQ", "name": "QQQ", "note": "Nasdaq-100 ETF 상대 흐름"},
+    {"symbol": "^GSPC", "name": "S&P 500", "note": "미국 대형주 전반의 위험선호 기준, 종합 점수의 시장 베타 기준"},
+    {"symbol": "^IXIC", "name": "Nasdaq Composite", "note": "AI·반도체·소프트웨어 투자심리, 성장주 리스크 선호 확인"},
+    {"symbol": "^DJI", "name": "Dow Jones", "note": "우량 대형 가치주와 현금흐름 방어주의 상대 흐름"},
+    {"symbol": "^RUT", "name": "Russell 2000", "note": "소형주·내수·신용 민감도, 금리 부담 확인"},
+    {"symbol": "^VIX", "name": "VIX", "note": "옵션시장 변동성, 높을수록 공포와 헤지 수요 확대"},
+    {"symbol": "^TNX", "name": "10Y Treasury Yield", "note": "장기금리와 성장주 할인율 압력, 은행 NIM 방어 요인"},
+    {"symbol": "QQQ", "name": "QQQ", "note": "Nasdaq-100 ETF, AI 대형 성장주의 실시간 proxy"},
+    {"symbol": "IWM", "name": "IWM", "note": "Russell 2000 ETF, 소형 성장주와 신용 사이클 proxy"},
+    {"symbol": "GLD", "name": "Gold / GLD", "note": "금 가격 proxy, 인플레·실질금리·안전자산 수요 확인"},
+    {"symbol": "USO", "name": "Oil / USO", "note": "원유 가격 proxy, 에너지 강세와 물가 압력 확인"},
+    {"symbol": "XLE", "name": "Energy / XLE", "note": "에너지 섹터 ETF, 유가 충격 수혜와 섹터 로테이션 확인"},
+    {"symbol": "ARKK", "name": "High Growth / ARKK", "note": "장기 성장주 basket, 금리 상승 취약도 확인"},
 ]
 
 FLOW_SYMBOLS = [

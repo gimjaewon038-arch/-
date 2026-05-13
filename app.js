@@ -980,7 +980,7 @@ async function renderMarketIndicators() {
       )
       .join("");
     container.innerHTML = `
-      <p class="module-note">공포·탐욕지수는 CNN 7요소 구조를 참고한 자체 산식이며, 나머지 지수는 Yahoo Finance 실시간 proxy입니다.</p>
+      <p class="module-note">${escapeHtml(data.asOf || "Latest")} 기준 업데이트. ${escapeHtml(data.summary || "공포·탐욕지수는 CNN 7요소 구조를 참고한 자체 산식이며, 나머지 지수는 Yahoo Finance 실시간 proxy입니다.")}</p>
       ${cards}
     `;
   } catch (error) {
