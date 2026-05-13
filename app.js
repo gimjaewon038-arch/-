@@ -5,7 +5,7 @@ const companies = [
     sector: "Technology Hardware",
     profile: "서비스 매출과 프리미엄 기기 생태계가 핵심인 대형 현금흐름 기업",
     sensitivity: { duration: 0.45, cyclical: 0.38, policy: 0.34, dollar: 0.48 },
-    scores: { growth: 72, profitability: 88, fundamentals: 90, guidance: 70, companyRisk: 24, macroRegime: 63, rateSensitivity: 56, policyImpact: 62, sectorMomentum: 68, cycleFit: 65 },
+    scores: { growth: 78, profitability: 90, fundamentals: 92, guidance: 78, companyRisk: 26, macroRegime: 58, rateSensitivity: 51, policyImpact: 63, sectorMomentum: 70, cycleFit: 63 },
   },
   {
     ticker: "NVDA",
@@ -13,7 +13,7 @@ const companies = [
     sector: "Semiconductors",
     profile: "AI 인프라 투자 사이클과 데이터센터 가속기 수요에 민감한 고성장 기업",
     sensitivity: { duration: 0.82, cyclical: 0.58, policy: 0.52, dollar: 0.44 },
-    scores: { growth: 94, profitability: 91, fundamentals: 82, guidance: 89, companyRisk: 42, macroRegime: 68, rateSensitivity: 47, policyImpact: 58, sectorMomentum: 88, cycleFit: 78 },
+    scores: { growth: 96, profitability: 93, fundamentals: 85, guidance: 91, companyRisk: 45, macroRegime: 60, rateSensitivity: 42, policyImpact: 57, sectorMomentum: 84, cycleFit: 74 },
   },
   {
     ticker: "TSLA",
@@ -21,7 +21,7 @@ const companies = [
     sector: "Consumer Discretionary",
     profile: "전기차 수요, 가격 정책, 금리, 정책 보조금에 모두 민감한 성장주",
     sensitivity: { duration: 0.9, cyclical: 0.72, policy: 0.76, dollar: 0.35 },
-    scores: { growth: 66, profitability: 59, fundamentals: 63, guidance: 54, companyRisk: 62, macroRegime: 51, rateSensitivity: 38, policyImpact: 55, sectorMomentum: 49, cycleFit: 43 },
+    scores: { growth: 60, profitability: 55, fundamentals: 58, guidance: 48, companyRisk: 68, macroRegime: 43, rateSensitivity: 31, policyImpact: 52, sectorMomentum: 42, cycleFit: 38 },
   },
   {
     ticker: "JPM",
@@ -29,7 +29,7 @@ const companies = [
     sector: "Financials",
     profile: "순이자마진, 신용 사이클, 자본 규제, 경기 방향에 민감한 대형 은행",
     sensitivity: { duration: -0.22, cyclical: 0.7, policy: 0.69, dollar: 0.18 },
-    scores: { growth: 58, profitability: 76, fundamentals: 84, guidance: 63, companyRisk: 36, macroRegime: 61, rateSensitivity: 72, policyImpact: 57, sectorMomentum: 63, cycleFit: 59 },
+    scores: { growth: 60, profitability: 78, fundamentals: 85, guidance: 64, companyRisk: 38, macroRegime: 58, rateSensitivity: 74, policyImpact: 56, sectorMomentum: 56, cycleFit: 56 },
   },
   {
     ticker: "XOM",
@@ -37,7 +37,7 @@ const companies = [
     sector: "Energy",
     profile: "유가, 정제마진, 자본환원, 에너지 정책에 민감한 업스트림 중심 기업",
     sensitivity: { duration: -0.08, cyclical: 0.64, policy: 0.73, dollar: 0.41 },
-    scores: { growth: 47, profitability: 78, fundamentals: 81, guidance: 64, companyRisk: 34, macroRegime: 66, rateSensitivity: 69, policyImpact: 49, sectorMomentum: 71, cycleFit: 68 },
+    scores: { growth: 51, profitability: 80, fundamentals: 82, guidance: 67, companyRisk: 34, macroRegime: 72, rateSensitivity: 71, policyImpact: 47, sectorMomentum: 84, cycleFit: 74 },
   },
   {
     ticker: "HIMS",
@@ -45,7 +45,7 @@ const companies = [
     sector: "Digital Health",
     profile: "구독형 원격진료와 개인화 헬스케어 수요에 노출된 고성장 헬스 플랫폼",
     sensitivity: { duration: 0.86, cyclical: 0.46, policy: 0.82, dollar: 0.12 },
-    scores: { growth: 88, profitability: 61, fundamentals: 68, guidance: 82, companyRisk: 58, macroRegime: 56, rateSensitivity: 42, policyImpact: 48, sectorMomentum: 67, cycleFit: 61 },
+    scores: { growth: 82, profitability: 49, fundamentals: 59, guidance: 68, companyRisk: 70, macroRegime: 48, rateSensitivity: 35, policyImpact: 40, sectorMomentum: 47, cycleFit: 51 },
   },
   {
     ticker: "OSCR",
@@ -53,7 +53,7 @@ const companies = [
     sector: "Managed Care",
     profile: "ACA 개인 보험 시장, 의료비 추세, 정책 변화에 민감한 성장형 헬스케어 보험사",
     sensitivity: { duration: 0.62, cyclical: 0.34, policy: 0.9, dollar: 0.08 },
-    scores: { growth: 79, profitability: 53, fundamentals: 57, guidance: 72, companyRisk: 66, macroRegime: 55, rateSensitivity: 51, policyImpact: 44, sectorMomentum: 58, cycleFit: 54 },
+    scores: { growth: 82, profitability: 66, fundamentals: 66, guidance: 76, companyRisk: 59, macroRegime: 56, rateSensitivity: 53, policyImpact: 45, sectorMomentum: 50, cycleFit: 58 },
   },
   {
     ticker: "SOFI",
@@ -61,7 +61,7 @@ const companies = [
     sector: "Fintech",
     profile: "대출 성장, 예금 조달비용, 신용 사이클에 민감한 디지털 금융 플랫폼",
     sensitivity: { duration: 0.78, cyclical: 0.76, policy: 0.64, dollar: 0.1 },
-    scores: { growth: 82, profitability: 57, fundamentals: 62, guidance: 76, companyRisk: 61, macroRegime: 50, rateSensitivity: 39, policyImpact: 52, sectorMomentum: 57, cycleFit: 49 },
+    scores: { growth: 80, profitability: 58, fundamentals: 62, guidance: 73, companyRisk: 64, macroRegime: 46, rateSensitivity: 35, policyImpact: 51, sectorMomentum: 51, cycleFit: 45 },
   },
   {
     ticker: "HOOD",
@@ -69,7 +69,7 @@ const companies = [
     sector: "Fintech",
     profile: "거래 활동, 현금 잔고 수익, 암호자산 사이클에 민감한 리테일 브로커리지",
     sensitivity: { duration: 0.64, cyclical: 0.82, policy: 0.7, dollar: 0.15 },
-    scores: { growth: 77, profitability: 65, fundamentals: 66, guidance: 70, companyRisk: 59, macroRegime: 57, rateSensitivity: 54, policyImpact: 49, sectorMomentum: 62, cycleFit: 58 },
+    scores: { growth: 80, profitability: 67, fundamentals: 67, guidance: 72, companyRisk: 60, macroRegime: 55, rateSensitivity: 52, policyImpact: 48, sectorMomentum: 64, cycleFit: 58 },
   },
   {
     ticker: "RKLB",
@@ -77,7 +77,7 @@ const companies = [
     sector: "Space & Defense",
     profile: "발사 서비스와 우주 시스템 수주, 정부 예산, 장기 성장 할인율에 민감한 우주 기업",
     sensitivity: { duration: 0.93, cyclical: 0.52, policy: 0.78, dollar: 0.28 },
-    scores: { growth: 84, profitability: 38, fundamentals: 51, guidance: 69, companyRisk: 72, macroRegime: 48, rateSensitivity: 34, policyImpact: 61, sectorMomentum: 64, cycleFit: 55 },
+    scores: { growth: 82, profitability: 36, fundamentals: 49, guidance: 67, companyRisk: 75, macroRegime: 43, rateSensitivity: 28, policyImpact: 62, sectorMomentum: 63, cycleFit: 51 },
   },
   {
     ticker: "RDDT",
@@ -85,7 +85,7 @@ const companies = [
     sector: "Internet Media",
     profile: "광고 경기, 데이터 라이선싱, AI 검색 트래픽 변화에 민감한 커뮤니티 플랫폼",
     sensitivity: { duration: 0.83, cyclical: 0.7, policy: 0.46, dollar: 0.22 },
-    scores: { growth: 86, profitability: 49, fundamentals: 58, guidance: 74, companyRisk: 64, macroRegime: 53, rateSensitivity: 40, policyImpact: 56, sectorMomentum: 69, cycleFit: 60 },
+    scores: { growth: 88, profitability: 52, fundamentals: 61, guidance: 77, companyRisk: 63, macroRegime: 52, rateSensitivity: 37, policyImpact: 56, sectorMomentum: 70, cycleFit: 60 },
   },
   {
     ticker: "DUOL",
@@ -93,7 +93,7 @@ const companies = [
     sector: "Consumer Software",
     profile: "구독 전환, AI 학습 기능, 글로벌 소비 지출에 민감한 교육 소프트웨어 기업",
     sensitivity: { duration: 0.87, cyclical: 0.43, policy: 0.26, dollar: 0.36 },
-    scores: { growth: 83, profitability: 72, fundamentals: 76, guidance: 78, companyRisk: 45, macroRegime: 61, rateSensitivity: 43, policyImpact: 66, sectorMomentum: 72, cycleFit: 67 },
+    scores: { growth: 84, profitability: 73, fundamentals: 77, guidance: 79, companyRisk: 46, macroRegime: 58, rateSensitivity: 39, policyImpact: 66, sectorMomentum: 70, cycleFit: 65 },
   },
   {
     ticker: "PLTR",
@@ -101,7 +101,7 @@ const companies = [
     sector: "AI Software",
     profile: "정부·상업 AI 플랫폼 도입, 국방 예산, 고멀티플 밸류에이션에 민감한 소프트웨어 기업",
     sensitivity: { duration: 0.88, cyclical: 0.48, policy: 0.74, dollar: 0.32 },
-    scores: { growth: 85, profitability: 74, fundamentals: 73, guidance: 80, companyRisk: 50, macroRegime: 62, rateSensitivity: 41, policyImpact: 63, sectorMomentum: 81, cycleFit: 70 },
+    scores: { growth: 88, profitability: 76, fundamentals: 75, guidance: 83, companyRisk: 52, macroRegime: 59, rateSensitivity: 37, policyImpact: 64, sectorMomentum: 82, cycleFit: 69 },
   },
   {
     ticker: "CRWD",
@@ -109,7 +109,7 @@ const companies = [
     sector: "Cybersecurity",
     profile: "엔터프라이즈 보안 지출, ARR 성장, 소프트웨어 밸류에이션에 민감한 보안 플랫폼",
     sensitivity: { duration: 0.79, cyclical: 0.4, policy: 0.38, dollar: 0.3 },
-    scores: { growth: 80, profitability: 73, fundamentals: 77, guidance: 76, companyRisk: 44, macroRegime: 64, rateSensitivity: 46, policyImpact: 67, sectorMomentum: 76, cycleFit: 69 },
+    scores: { growth: 82, profitability: 74, fundamentals: 78, guidance: 78, companyRisk: 44, macroRegime: 60, rateSensitivity: 42, policyImpact: 68, sectorMomentum: 78, cycleFit: 68 },
   },
   {
     ticker: "NET",
@@ -117,7 +117,7 @@ const companies = [
     sector: "Cloud Infrastructure",
     profile: "네트워크 보안, 엣지 컴퓨팅, 개발자 플랫폼 수요에 민감한 클라우드 인프라 기업",
     sensitivity: { duration: 0.91, cyclical: 0.45, policy: 0.34, dollar: 0.31 },
-    scores: { growth: 78, profitability: 50, fundamentals: 61, guidance: 69, companyRisk: 57, macroRegime: 55, rateSensitivity: 36, policyImpact: 62, sectorMomentum: 71, cycleFit: 58 },
+    scores: { growth: 77, profitability: 50, fundamentals: 60, guidance: 68, companyRisk: 60, macroRegime: 50, rateSensitivity: 31, policyImpact: 62, sectorMomentum: 66, cycleFit: 55 },
   },
   {
     ticker: "APP",
@@ -125,7 +125,7 @@ const companies = [
     sector: "AdTech",
     profile: "모바일 광고 예산, AI 광고 최적화, 소비 앱 사이클에 민감한 광고 기술 기업",
     sensitivity: { duration: 0.76, cyclical: 0.84, policy: 0.36, dollar: 0.27 },
-    scores: { growth: 87, profitability: 83, fundamentals: 75, guidance: 81, companyRisk: 52, macroRegime: 60, rateSensitivity: 45, policyImpact: 64, sectorMomentum: 74, cycleFit: 68 },
+    scores: { growth: 89, profitability: 84, fundamentals: 76, guidance: 83, companyRisk: 53, macroRegime: 58, rateSensitivity: 42, policyImpact: 64, sectorMomentum: 76, cycleFit: 68 },
   },
   {
     ticker: "TMDX",
@@ -133,7 +133,7 @@ const companies = [
     sector: "Medical Technology",
     profile: "장기 이식 물류 플랫폼과 의료기기 채택률에 민감한 고성장 메드테크 기업",
     sensitivity: { duration: 0.81, cyclical: 0.25, policy: 0.58, dollar: 0.09 },
-    scores: { growth: 81, profitability: 42, fundamentals: 56, guidance: 73, companyRisk: 68, macroRegime: 59, rateSensitivity: 44, policyImpact: 57, sectorMomentum: 66, cycleFit: 60 },
+    scores: { growth: 79, profitability: 41, fundamentals: 55, guidance: 71, companyRisk: 70, macroRegime: 55, rateSensitivity: 40, policyImpact: 57, sectorMomentum: 58, cycleFit: 56 },
   },
   {
     ticker: "IONQ",
@@ -141,15 +141,15 @@ const companies = [
     sector: "Quantum Computing",
     profile: "양자컴퓨팅 상용화 기대와 장기 R&D 자금조달 환경에 민감한 초기 성장주",
     sensitivity: { duration: 0.98, cyclical: 0.5, policy: 0.67, dollar: 0.18 },
-    scores: { growth: 76, profitability: 18, fundamentals: 36, guidance: 58, companyRisk: 84, macroRegime: 42, rateSensitivity: 24, policyImpact: 54, sectorMomentum: 63, cycleFit: 45 },
+    scores: { growth: 74, profitability: 17, fundamentals: 35, guidance: 56, companyRisk: 86, macroRegime: 36, rateSensitivity: 18, policyImpact: 54, sectorMomentum: 55, cycleFit: 39 },
   },
 ];
 
 const macroState = {
-  fedFunds: { label: "Fed Funds", value: "5.25-5.50%", trend: "Higher for longer", interpretation: "장기 성장주 밸류에이션에는 부담, 은행 NIM에는 일부 우호" },
-  tenYear: { label: "10Y Treasury", value: "4.42%", trend: "+18bp", interpretation: "듀레이션이 긴 기술/소비 성장주에 할인율 압력" },
-  cpi: { label: "CPI", value: "3.3%", trend: "둔화", interpretation: "완화 기대를 높이지만 서비스 물가가 리스크로 남음" },
-  ism: { label: "ISM Manufacturing", value: "50.9", trend: "확장 전환", interpretation: "산업재, 에너지, 반도체 주문 사이클에 우호" },
+  fedFunds: { label: "Fed Funds", value: "3.50-3.75%", trend: "동결 장기화", interpretation: "인하 기대가 뒤로 밀리며 고PER 성장주에는 부담, 은행 순이자마진에는 일부 방어 요인" },
+  tenYear: { label: "10Y Treasury", value: "4.45%", trend: "상승 압력", interpretation: "장기금리 재상승은 AI·소프트웨어·소형 성장주의 할인율 부담을 키움" },
+  cpi: { label: "CPI", value: "3.8%", trend: "예상 상회", interpretation: "에너지·주거비가 물가 부담을 키워 단기 위험선호를 낮추고 방어/에너지 선호를 강화" },
+  ism: { label: "Cycle/Oil", value: "WTI ~$100", trend: "유가 충격", interpretation: "에너지 섹터에는 우호적이지만 소비재와 운송·성장주 마진에는 부담" },
 };
 
 const nasdaq100Constituents = [
@@ -469,34 +469,55 @@ async function loadUniverse() {
 }
 
 const sectors = [
-  { etf: "XLK", name: "Technology", relative: 74, rate: "High", cycle: "Mid-cycle leadership" },
-  { etf: "XLF", name: "Financials", relative: 62, rate: "Mixed", cycle: "Benefits from steepening, hurt by credit stress" },
-  { etf: "XLE", name: "Energy", relative: 71, rate: "Low", cycle: "Late-cycle inflation hedge" },
-  { etf: "XLY", name: "Consumer Discretionary", relative: 46, rate: "High", cycle: "Rate and credit sensitive" },
-  { etf: "XLV", name: "Healthcare", relative: 57, rate: "Low", cycle: "Defensive compounder" },
-  { etf: "XLI", name: "Industrials", relative: 60, rate: "Medium", cycle: "Manufacturing recovery exposure" },
-  { etf: "ARKK", name: "High Growth", relative: 52, rate: "Very High", cycle: "Long-duration growth basket" },
-  { etf: "ARKG", name: "Digital Health", relative: 59, rate: "High", cycle: "Policy and adoption sensitive" },
-  { etf: "FINX", name: "Fintech", relative: 55, rate: "High", cycle: "Credit and liquidity sensitive" },
+  { etf: "XLK", name: "Technology", relative: 70, rate: "High", cycle: "AI earnings leadership, short-term CPI/yield pressure" },
+  { etf: "XLF", name: "Financials", relative: 56, rate: "Mixed", cycle: "NII support offset by credit and policy uncertainty" },
+  { etf: "XLE", name: "Energy", relative: 84, rate: "Low", cycle: "Oil shock and inflation hedge leadership" },
+  { etf: "XLY", name: "Consumer Discretionary", relative: 41, rate: "High", cycle: "Fuel, credit, and rate-sensitive consumer pressure" },
+  { etf: "XLV", name: "Healthcare", relative: 48, rate: "Low", cycle: "Defensive bid, but large-cap healthcare underperformance" },
+  { etf: "XLI", name: "Industrials", relative: 55, rate: "Medium", cycle: "Manufacturing recovery offset by higher input costs" },
+  { etf: "ARKK", name: "High Growth", relative: 45, rate: "Very High", cycle: "Long-duration basket hurt by higher yields" },
+  { etf: "ARKG", name: "Digital Health", relative: 47, rate: "High", cycle: "GLP-1 transition and policy sensitivity" },
+  { etf: "FINX", name: "Fintech", relative: 51, rate: "High", cycle: "Credit and liquidity sensitive" },
   { etf: "ITA", name: "Space & Defense", relative: 67, rate: "Medium", cycle: "Government budget support" },
-  { etf: "CIBR", name: "Cybersecurity", relative: 70, rate: "Medium", cycle: "Resilient enterprise spend" },
-  { etf: "CLOU", name: "Cloud Infrastructure", relative: 63, rate: "High", cycle: "Software multiple recovery" },
-  { etf: "BOTZ", name: "AI Software", relative: 76, rate: "High", cycle: "AI platform leadership" },
-  { etf: "SOCL", name: "Internet Media", relative: 61, rate: "High", cycle: "Ad market and AI data licensing" },
-  { etf: "BLOK", name: "AdTech", relative: 66, rate: "High", cycle: "Mobile advertising recovery" },
-  { etf: "QTUM", name: "Quantum Computing", relative: 58, rate: "Very High", cycle: "Speculative innovation cycle" },
+  { etf: "CIBR", name: "Cybersecurity", relative: 78, rate: "Medium", cycle: "Resilient enterprise spend and platform consolidation" },
+  { etf: "CLOU", name: "Cloud Infrastructure", relative: 66, rate: "High", cycle: "Cloud demand intact, multiples capped by yields" },
+  { etf: "BOTZ", name: "AI Software", relative: 82, rate: "High", cycle: "AI platform leadership with crowding risk" },
+  { etf: "SOCL", name: "Internet Media", relative: 70, rate: "High", cycle: "Ad market and AI data licensing recovery" },
+  { etf: "BLOK", name: "AdTech", relative: 76, rate: "High", cycle: "Mobile advertising and AI optimization strength" },
+  { etf: "QTUM", name: "Quantum Computing", relative: 55, rate: "Very High", cycle: "Speculative innovation cycle under yield pressure" },
 ];
+
+const latestRevaluationNotes = {
+  AAPL: "Q2 매출 1112억 달러와 EPS 2.01달러, 서비스 매출 최고치, 1000억 달러 자사주 매입을 반영했습니다. WWDC AI 기대는 우호적이지만 높은 장기금리는 일부 할인했습니다.",
+  NVDA: "데이터센터 AI 수요와 애널리스트 목표가 상향은 성장·가이던스에 긍정적입니다. 다만 기술주 쏠림, 고유가발 물가, 금리 재상승으로 외부 환경 점수는 낮췄습니다.",
+  TSLA: "Q1 인도 35만8023대와 에너지 저장 8.8GWh가 기대를 밑돌았고, 금리·소비 둔화 압력이 EV 수요에 불리해 회사·외부 점수를 모두 낮췄습니다.",
+  JPM: "Q1 순이익 165억 달러, CIB와 시장 부문 강세를 반영했습니다. 높은 금리는 NII에 방어적이나, 신용 사이클과 규제 불확실성은 리스크로 남겼습니다.",
+  XOM: "유가가 100달러 부근으로 올라 에너지 섹터 상대강도와 현금흐름 방어력이 개선됐습니다. 지정학·정책 리스크는 정책 영향 점수에서 할인했습니다.",
+  HIMS: "Q1 매출은 6.08억 달러로 증가했지만 GLP-1 전략 전환 비용, 순손실, EBITDA 전망 하향을 반영해 수익성·가이던스·리스크 점수를 낮췄습니다.",
+  OSCR: "Q1 매출 46억 달러, MLR 개선, 순이익 6.79억 달러, 2026년 가이던스 재확인을 반영해 수익성·펀더멘탈·가이던스를 올렸습니다.",
+  SOFI: "고금리와 신용 사이클 부담을 반영해 외부 환경과 리스크를 보수적으로 조정했습니다.",
+  HOOD: "거래 활동과 위험자산 관심은 우호적이나 변동성·정책 리스크를 함께 반영했습니다.",
+  RKLB: "정부 예산 테마는 유지되지만 장기금리 상승이 장기 성장 현금흐름 할인율을 높여 외부 환경을 낮췄습니다.",
+  RDDT: "AI 데이터 라이선싱과 광고 회복 기대를 반영해 성장·가이던스를 올렸고, 고금리 부담은 외부 환경에서 일부 할인했습니다.",
+  DUOL: "구독 소프트웨어의 질은 유지되지만 고멀티플 성장주 부담을 반영해 외부 환경을 낮췄습니다.",
+  PLTR: "AI 플랫폼 수요와 정부·상업 도입 모멘텀은 강하지만 밸류에이션과 금리 부담을 함께 반영했습니다.",
+  CRWD: "사이버보안 지출의 방어성과 플랫폼 통합 수요를 반영해 회사 점수와 섹터 모멘텀을 올렸습니다.",
+  NET: "클라우드 인프라 수요는 유지되지만 고금리와 수익성 검증 부담을 반영해 리스크를 높였습니다.",
+  APP: "AI 광고 최적화와 모바일 광고 회복을 반영해 성장·가이던스를 올렸습니다. 광고 경기 민감도는 리스크로 유지했습니다.",
+  TMDX: "헬스케어 대형주 약세와 성장주 할인율 부담을 반영해 외부 환경과 리스크를 보수적으로 조정했습니다.",
+  IONQ: "양자컴퓨팅 장기 기대는 유지되지만 금리 상승기에는 현금흐름 가시성이 낮은 초기 성장주 할인폭이 커져 점수를 낮췄습니다.",
+};
 
 const eventTemplates = {
   company: {
     title: "가이던스 업데이트",
     source: "Earnings call / SEC 8-K",
-    summary: "경영진이 수요는 견조하지만 비용 통제와 재고 정상화를 다음 분기의 핵심 변수로 제시했습니다.",
+    summary: "최신 실적·뉴스·공시에서 확인된 매출 성장, 마진, 가이던스, 리스크 변화를 회사 자체 점수에 반영했습니다.",
   },
   macro: {
     title: "금리·물가 이벤트",
     source: "FRED / Federal Reserve / Policy news",
-    summary: "장기 금리가 상승했지만 CPI 둔화가 확인되며 경기 연착륙 가능성이 일부 높아졌습니다.",
+    summary: "April CPI 예상 상회, 장기금리 상승, 유가 100달러 부근의 인플레이션 압력을 외부 환경 점수에 반영했습니다.",
   },
 };
 
@@ -554,7 +575,22 @@ function calculateComposite(scores) {
 }
 
 function buildTimeline(company) {
+  const latestNote = latestRevaluationNotes[company.ticker] || `${company.sector}의 최신 뉴스, 금리, 정책, 섹터 상대강도를 반영해 기본 점수를 다시 산정했습니다.`;
   const base = [
+    {
+      type: "company",
+      title: `${company.ticker} 최신 뉴스 기반 점수 재평가`,
+      date: "2026-05-13",
+      source: "Latest news / filings / macro dashboard",
+      summary: latestNote,
+    },
+    {
+      type: "macro",
+      title: "Hot CPI·고유가·금리 동결 장기화 반영",
+      date: "2026-05-13",
+      source: "Market news / rates / sector rotation",
+      summary: "April CPI가 예상보다 높고 유가가 100달러 부근에서 움직이면서, 고PER 성장주와 소비 민감주는 할인하고 에너지·현금흐름 우량주는 상대적으로 우호적으로 조정했습니다.",
+    },
     {
       type: "company",
       title: `${company.ticker} 실적 가이던스 반영`,
@@ -1068,13 +1104,15 @@ function companyEventImpact(company) {
 
 function renderMemo(company, scores, composite) {
   const memo = document.querySelector("#memo");
+  const latestNote = latestRevaluationNotes[company.ticker] || `${company.sector}의 최신 뉴스와 거시 환경을 반영해 기본 점수를 업데이트했습니다.`;
   const riskTone = scores.companyRisk >= 55 ? "리스크가 높은 편이라 점수 상승에도 확신도는 제한됩니다." : "리스크가 통제 가능한 수준이라 펀더멘탈 점수의 설명력이 높습니다.";
   const rateTone = scores.rateSensitivity < 50 ? "현재 금리 레벨은 밸류에이션에 부담입니다." : "현재 금리 환경은 비즈니스 모델에 중립 이상으로 작용합니다.";
   const policyTone = scores.policyImpact < 55 ? "정책 변수는 단기 불확실성으로 남아 있습니다." : "정책 환경은 상대적으로 우호적이거나 관리 가능한 수준입니다.";
   const sectorTone = scores.sectorMomentum >= 65 ? `${company.sector}의 상대 강도는 종합 점수를 지지합니다.` : `${company.sector}의 상대 강도는 아직 강한 확인 신호가 아닙니다.`;
   const cards = [
+    ["최신 재평가", latestNote],
     ["기업 요인", `${company.name}의 성장성 ${scores.growth}, 수익성 ${scores.profitability}, 펀더멘탈 ${scores.fundamentals}을 반영했습니다. ${riskTone}`],
-    ["매크로 요인", `매크로 레짐 ${scores.macroRegime}, 금리 민감도 ${scores.rateSensitivity}입니다. ${rateTone}`],
+    ["매크로 요인", `매크로 레짐 ${scores.macroRegime}, 금리 민감도 ${scores.rateSensitivity}입니다. Hot CPI와 유가 상승 때문에 ${rateTone}`],
     ["섹터 요인", `섹터 모멘텀 ${scores.sectorMomentum}, 사이클 적합도 ${scores.cycleFit}입니다. ${sectorTone}`],
     ["정책 요인", `정책 영향 점수는 ${scores.policyImpact}입니다. ${policyTone} 현재 종합 점수는 ${composite}입니다.`],
   ];
