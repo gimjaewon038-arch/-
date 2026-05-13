@@ -1262,6 +1262,32 @@ function formatAxisLabel(timestamp, range) {
   return `${date.getMonth() + 1}/${date.getDate()}`;
 }
 
+function chartLabel(point, preferredDirection, bounds) {
+  const edgePad = 12;
+  const textWidth = 58;
+  const textHeight = 18;
+  const isLeftEdge = point.x < bounds.left + 60;
+  const isRightEdge = point.x > bounds.width - bounds.right - 60;
+  const anchor = isRightEdge ? "end" : "start";
+  const xOffset = isRightEdge ? -12 : isLeftEdge ? 12 : 10;
+  const x = clampNumber(point.x + xOffset, bounds.left + edgePad, bounds.width - bounds.right - edgePad);
+  const aboveY = point.y - 14;
+  const belowY = point.y + 28;
+  const wantsAbove = preferredDirection === "above" || belowY > bounds.height - bounds.bottom - 8;
+  const y = clampNumber(wantsAbove ? aboveY : belowY, bounds.top + textHeight, bounds.height - bounds.bottom - 10);
+  const rectX = anchor === "end" ? x - textWidth - 5 : x - 5;
+  const rectY = y - 15;
+  return {
+    x,
+    y,
+    anchor,
+    rectX: clampNumber(rectX, bounds.left, bounds.width - bounds.right - textWidth - 10),
+    rectY: clampNumber(rectY, bounds.top, bounds.height - bounds.bottom - textHeight),
+    rectWidth: textWidth + 10,
+    rectHeight: textHeight + 7,
+  };
+}
+
 function renderSparkline(history, range = selectedPriceRange) {
   if (!history.length) {
     return `<div class="price-chart-empty">주가 그래프 데이터를 불러오지 못했습니다.</div>`;
@@ -1292,12 +1318,9 @@ function renderSparkline(history, range = selectedPriceRange) {
   const lowIndex = values.indexOf(min);
   const high = coords[highIndex];
   const low = coords[lowIndex];
-  const highAnchorEnd = high.x > width * 0.72;
-  const lowAnchorEnd = low.x > width * 0.72;
-  const highLabelX = clampNumber(high.x + (highAnchorEnd ? -10 : 10), left, width - right);
-  const lowLabelX = clampNumber(low.x + (lowAnchorEnd ? -10 : 10), left, width - right);
-  const highLabelY = clampNumber(high.y - 12, 18, height - bottom - 8);
-  const lowLabelY = clampNumber(low.y + 24, top + 18, height - bottom - 6);
+  const labelBounds = { width, height, left, right, top, bottom };
+  const highLabel = chartLabel(high, "above", labelBounds);
+  const lowLabel = chartLabel(low, "above", labelBounds);
   const tickIndexes = [0, Math.floor((coords.length - 1) / 3), Math.floor(((coords.length - 1) * 2) / 3), coords.length - 1].filter(
     (value, index, array) => array.indexOf(value) === index,
   );
@@ -1328,11 +1351,13 @@ function renderSparkline(history, range = selectedPriceRange) {
       </g>
       <g class="price-point-label high">
         <circle cx="${high.x.toFixed(1)}" cy="${high.y.toFixed(1)}" r="4" />
-        <text x="${highLabelX.toFixed(1)}" y="${highLabelY.toFixed(1)}" text-anchor="${highAnchorEnd ? "end" : "start"}">$${max.toFixed(2)}</text>
+        <rect x="${highLabel.rectX.toFixed(1)}" y="${highLabel.rectY.toFixed(1)}" width="${highLabel.rectWidth}" height="${highLabel.rectHeight}" rx="7" />
+        <text x="${highLabel.x.toFixed(1)}" y="${highLabel.y.toFixed(1)}" text-anchor="${highLabel.anchor}">$${max.toFixed(2)}</text>
       </g>
       <g class="price-point-label low">
         <circle cx="${low.x.toFixed(1)}" cy="${low.y.toFixed(1)}" r="4" />
-        <text x="${lowLabelX.toFixed(1)}" y="${lowLabelY.toFixed(1)}" text-anchor="${lowAnchorEnd ? "end" : "start"}">$${min.toFixed(2)}</text>
+        <rect x="${lowLabel.rectX.toFixed(1)}" y="${lowLabel.rectY.toFixed(1)}" width="${lowLabel.rectWidth}" height="${lowLabel.rectHeight}" rx="7" />
+        <text x="${lowLabel.x.toFixed(1)}" y="${lowLabel.y.toFixed(1)}" text-anchor="${lowLabel.anchor}">$${min.toFixed(2)}</text>
       </g>
     </svg>
   `;

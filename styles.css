@@ -710,14 +710,19 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   stroke-width: 3;
 }
 
+.price-point-label rect {
+  fill: rgba(255, 255, 255, 0.94);
+  stroke: rgba(219, 230, 226, 0.95);
+  stroke-width: 1;
+}
+
 .price-chart.negative .price-point-label circle {
   stroke: var(--red);
 }
 
 .price-point-label text {
-  paint-order: stroke;
-  stroke: #ffffff;
-  stroke-width: 5;
+  paint-order: normal;
+  stroke: none;
   stroke-linejoin: round;
   fill: #53635e;
   font-size: 13px;
