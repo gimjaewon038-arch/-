@@ -516,6 +516,7 @@ async function loadUniverse() {
     mergeUniverseItems(data.items || []);
     universeLoaded = true;
     renderCompanyList();
+    renderHomeSearch();
   } catch (error) {
     universeLoaded = false;
   }
@@ -663,8 +664,17 @@ let expandedNewsLists = {};
 let newsEvidenceCache = {};
 let universeLoaded = false;
 let selectedPriceRange = "3M";
+let activeHomeFilter = "all";
 const companyFactorKeys = ["growth", "profitability", "fundamentals", "guidance", "companyRisk"];
 const environmentFactorKeys = ["macroRegime", "rateSensitivity", "policyImpact", "sectorMomentum", "cycleFit"];
+const homeFilters = [
+  { key: "all", label: "전체" },
+  { key: "ai", label: "AI·반도체", terms: ["ai", "semiconductor", "software", "cloud", "cybersecurity", "technology"] },
+  { key: "growth", label: "성장주", terms: ["growth", "fintech", "digital health", "internet", "quantum", "space", "adtech"] },
+  { key: "finance", label: "금융", terms: ["financial", "fintech", "bank", "insurance"] },
+  { key: "energy", label: "에너지", terms: ["energy", "oil", "gas"] },
+  { key: "defensive", label: "방어·헬스", terms: ["health", "consumer staples", "utilities", "managed care", "medical"] },
+];
 const priceRangeOptions = [
   ["1D", "일"],
   ["5D", "5일"],
@@ -962,6 +972,69 @@ function factorDetail(key, company, scores) {
   };
 }
 
+function selectCompany(ticker) {
+  selectedTicker = ticker;
+  currentPage = "detail";
+  document.querySelector(".app-shell").classList.add("sidebar-closed");
+  document.body.classList.remove("sidebar-open");
+  document.querySelector("#sidebarToggle").setAttribute("aria-label", "종목 사이드바 열기");
+  render();
+}
+
+function companyMatchesFilter(company, filterKey) {
+  const filter = homeFilters.find((item) => item.key === filterKey);
+  if (!filter || filter.key === "all") return true;
+  const haystack = `${company.ticker} ${company.name} ${company.sector} ${company.profile || ""} ${company.industry || ""}`.toLowerCase();
+  return filter.terms.some((term) => haystack.includes(term));
+}
+
+function homeSearchMatches(company, query) {
+  if (!query) return true;
+  return `${company.ticker} ${company.name} ${company.sector} ${company.profile || ""} ${company.industry || ""}`.toLowerCase().includes(query);
+}
+
+function renderHomeSearch() {
+  const input = document.querySelector("#globalSearch");
+  const results = document.querySelector("#globalResults");
+  const filters = document.querySelector("#quickFilters");
+  if (!input || !results || !filters) return;
+
+  filters.innerHTML = homeFilters
+    .map(
+      (filter) => `
+        <button class="quick-filter ${filter.key === activeHomeFilter ? "active" : ""}" type="button" data-home-filter="${escapeHtml(filter.key)}">
+          ${escapeHtml(filter.label)}
+        </button>
+      `,
+    )
+    .join("");
+
+  const query = input.value.trim().toLowerCase();
+  const matches = companies
+    .filter((company) => companyMatchesFilter(company, activeHomeFilter) && homeSearchMatches(company, query))
+    .map((company) => ({ company, score: calculateComposite(companyScores(company)) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 9);
+
+  if (!matches.length) {
+    results.innerHTML = `<div class="headline-placeholder">검색 결과가 없습니다. 티커, 회사명, 섹터명을 다시 입력해보세요.</div>`;
+    return;
+  }
+
+  results.innerHTML = matches
+    .map(
+      ({ company, score }) => `
+        <button class="global-result" type="button" data-ticker="${escapeHtml(company.ticker)}">
+          <strong>${escapeHtml(company.ticker)} · ${escapeHtml(company.name)}</strong>
+          <em>${score}</em>
+          <span>${escapeHtml(company.sector)}</span>
+          <p>${escapeHtml(company.profile || "섹터, 뉴스, 매크로 민감도를 기준으로 재평가합니다.")}</p>
+        </button>
+      `,
+    )
+    .join("");
+}
+
 function renderCompanyList() {
   const query = document.querySelector("#companySearch").value.trim().toLowerCase();
   const list = document.querySelector("#companyList");
@@ -980,14 +1053,7 @@ function renderCompanyList() {
       button.className = `company-item ${company.ticker === selectedTicker ? "active" : ""}`;
       button.type = "button";
       button.innerHTML = `<strong>${company.ticker} · ${company.name}</strong><span>${company.sector}</span>`;
-      button.addEventListener("click", () => {
-        selectedTicker = company.ticker;
-        currentPage = "detail";
-        document.querySelector(".app-shell").classList.add("sidebar-closed");
-        document.body.classList.remove("sidebar-open");
-        document.querySelector("#sidebarToggle").setAttribute("aria-label", "종목 사이드바 열기");
-        render();
-      });
+      button.addEventListener("click", () => selectCompany(company.ticker));
       list.appendChild(button);
     });
 }
@@ -1835,6 +1901,7 @@ function render() {
   renderCompanyList();
 
   if (isOverview) {
+    renderHomeSearch();
     renderMarketBrief();
     renderMacro("#overviewMacroGrid");
     renderSectorChart();
@@ -1875,6 +1942,8 @@ function render() {
 }
 
 document.querySelector("#companySearch").addEventListener("input", renderCompanyList);
+document.querySelector("#globalSearch").addEventListener("input", renderHomeSearch);
+document.querySelector("#globalSearch").addEventListener("focus", renderHomeSearch);
 document.querySelector("#sidebarToggle").addEventListener("click", () => {
   const shell = document.querySelector(".app-shell");
   const isClosed = shell.classList.toggle("sidebar-closed");
@@ -1898,6 +1967,21 @@ document.querySelector("#timelineToggle").addEventListener("click", (event) => {
   document.querySelector("#timelineToggle").setAttribute("aria-expanded", String(isOpen));
 });
 document.addEventListener("click", (event) => {
+  const homeFilter = event.target.closest("[data-home-filter]");
+  if (homeFilter) {
+    event.preventDefault();
+    activeHomeFilter = homeFilter.dataset.homeFilter || "all";
+    renderHomeSearch();
+    return;
+  }
+
+  const homeResult = event.target.closest("[data-ticker]");
+  if (homeResult) {
+    event.preventDefault();
+    selectCompany(homeResult.dataset.ticker);
+    return;
+  }
+
   const toggle = event.target.closest("[data-news-toggle]");
   if (toggle) {
     event.preventDefault();
