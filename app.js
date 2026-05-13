@@ -660,6 +660,7 @@ let revisions = {};
 let selectedCompanyFactor = "growth";
 let selectedEnvironmentFactor = "macroRegime";
 let expandedNewsLists = {};
+let newsEvidenceCache = {};
 let universeLoaded = false;
 let selectedPriceRange = "3M";
 const companyFactorKeys = ["growth", "profitability", "fundamentals", "guidance", "companyRisk"];
@@ -737,14 +738,52 @@ function externalPartScore(scores) {
 }
 
 function getNarrative(company) {
+  const live = liveNewsNarrative(company);
   const fallback = latestRevaluationNotes[company.ticker] || `${company.sector}의 최신 뉴스, 공시, 매크로, 섹터 흐름을 반영해 재평가했습니다.`;
-  return (
-    scoringNarratives[company.ticker] || {
-      positives: [`${company.name}의 핵심 사업과 섹터 수요를 반영했습니다.`, fallback],
-      negatives: ["금리 상승, 물가 부담, 섹터 상대강도 변화는 외부 환경 점수에서 할인했습니다."],
-      conflict: "회사 자체 요인과 외부 환경을 분리해 평가했습니다. 기업 뉴스가 좋아도 매크로가 불리하면 composite score 상승폭은 제한됩니다.",
-    }
-  );
+  const staticNarrative = scoringNarratives[company.ticker];
+  if (staticNarrative) {
+    return {
+      positives: [...staticNarrative.positives, live.company].filter(Boolean),
+      negatives: [...staticNarrative.negatives, live.related].filter(Boolean),
+      conflict: `${staticNarrative.conflict} 최신 헤드라인이 새로 들어오면 이 근거 영역과 점수 메모도 함께 갱신됩니다.`,
+    };
+  }
+  return {
+    positives: [live.company || `${company.name}의 핵심 사업과 섹터 수요를 반영했습니다.`, fallback],
+    negatives: [live.related || "금리 상승, 물가 부담, 섹터 상대강도 변화는 외부 환경 점수에서 할인했습니다."],
+    conflict: `${company.name}의 개별 뉴스와 ${company.sector} 관련 섹터·매크로 뉴스를 나눠 반영했습니다. 종목 뉴스가 좋아도 관련 섹터 뉴스나 금리 환경이 불리하면 composite score 상승폭은 제한됩니다.`,
+  };
+}
+
+function formatEvidenceHeadline(item) {
+  if (!item) return "";
+  const title = item.titleKo || item.title || "제목 확인 필요";
+  const source = item.source || "News";
+  const published = item.published ? `, ${item.published}` : "";
+  return `"${title}" (${source}${published})`;
+}
+
+function liveNewsNarrative(company) {
+  const cache = newsEvidenceCache[company.ticker] || {};
+  const companyHeadline = cache.company?.[0];
+  const relatedHeadline = cache.related?.[0];
+  return {
+    company: companyHeadline
+      ? `최근 선택 종목 뉴스 ${formatEvidenceHeadline(companyHeadline)}를 회사 자체 점수의 직접 근거로 반영했습니다.`
+      : "",
+    related: relatedHeadline
+      ? `관련 섹터·매크로 뉴스 ${formatEvidenceHeadline(relatedHeadline)}를 외부 환경과 리스크 할인 근거로 반영했습니다.`
+      : "",
+  };
+}
+
+function refreshDetailRationale(company) {
+  if (currentPage !== "detail" || selectedTicker !== company.ticker) return;
+  const scores = companyScores(company);
+  const composite = calculateComposite(scores);
+  renderCompositeSummary(company, scores, composite);
+  renderFactorSections(company, scores);
+  renderMemo(company, scores, composite);
 }
 
 function scoreBandText(score) {
@@ -1078,6 +1117,14 @@ function renderMarketBrief() {
       `,
     )
     .join("");
+}
+
+function renderCompositeSummary(company, scores, composite) {
+  const narrative = getNarrative(company);
+  document.querySelector("#compositeSummary").innerHTML = `
+    <strong>회사 ${companyPartScore(scores)}점 · 외부환경 ${externalPartScore(scores)}점</strong>
+    <span>${escapeHtml(narrative.conflict)}</span>
+  `;
 }
 
 function impactTone(value) {
@@ -1589,8 +1636,14 @@ async function renderLatestNews(company) {
       fetchNews(company, "related"),
     ]);
     if (selectedTicker !== tickerAtRequest) return;
+    newsEvidenceCache[company.ticker] = {
+      company: companyNews.items || [],
+      related: relatedNews.items || [],
+      updatedAt: new Date().toISOString(),
+    };
     renderHeadlines(companyContainer, companyNews.items || [], `${company.ticker}-company`);
     renderHeadlines(relatedContainer, relatedNews.items || [], `${company.ticker}-related`);
+    refreshDetailRationale(company);
   } catch (error) {
     if (selectedTicker !== tickerAtRequest) return;
     renderHeadlineState(companyContainer, "뉴스 서버 연결이 필요합니다. server.py로 실행하면 헤드라인이 표시됩니다.");
@@ -1804,11 +1857,7 @@ function render() {
   document.querySelector("#compositeScore").textContent = composite;
   document.querySelector("#scoreDelta").textContent = `${delta >= 0 ? "+" : ""}${delta}`;
   document.querySelector("#scoreDelta").style.color = delta >= 0 ? "var(--green)" : "var(--red)";
-  const narrative = getNarrative(company);
-  document.querySelector("#compositeSummary").innerHTML = `
-    <strong>회사 ${companyPartScore(scores)}점 · 외부환경 ${externalPartScore(scores)}점</strong>
-    <span>${escapeHtml(narrative.conflict)}</span>
-  `;
+  renderCompositeSummary(company, scores, composite);
   document.querySelector("#compositeMeter").style.width = `${composite}%`;
   document.querySelector("#lastUpdated").textContent = `Updated ${new Date().toISOString().slice(0, 10)}`;
   const revaluationDone = Boolean(revision?.applied?.companyGuidance && revision?.applied?.macroRates);
