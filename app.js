@@ -1243,34 +1243,97 @@ async function fetchPriceSnapshot(company) {
   return response.json();
 }
 
-function renderSparkline(history) {
+function clampNumber(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function formatAxisLabel(timestamp, range) {
+  const date = new Date(Number(timestamp) * 1000);
+  if (Number.isNaN(date.getTime())) return "";
+  if (range === "1D") {
+    return date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
+  }
+  if (range === "5D") {
+    return `${date.getMonth() + 1}/${date.getDate()} ${date.toLocaleTimeString("ko-KR", { hour: "2-digit", hour12: false })}시`;
+  }
+  if (range === "1Y") {
+    return `${date.getFullYear()}.${date.getMonth() + 1}`;
+  }
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+function renderSparkline(history, range = selectedPriceRange) {
   if (!history.length) {
     return `<div class="price-chart-empty">주가 그래프 데이터를 불러오지 못했습니다.</div>`;
   }
   const width = 720;
-  const height = 210;
-  const padding = 18;
+  const height = 260;
+  const left = 34;
+  const right = 34;
+  const top = 34;
+  const bottom = 42;
+  const plotWidth = width - left - right;
+  const plotHeight = height - top - bottom;
   const values = history.map((point) => point.close);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
-  const points = values
-    .map((value, index) => {
-      const x = padding + (index / Math.max(values.length - 1, 1)) * (width - padding * 2);
-      const y = height - padding - ((value - min) / span) * (height - padding * 2);
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    })
-    .join(" ");
-  const area = `${padding},${height - padding} ${points} ${width - padding},${height - padding}`;
+  const coords = values.map((value, index) => {
+    const x = left + 4 + (index / Math.max(values.length - 1, 1)) * (plotWidth - 8);
+    const y = top + (1 - (value - min) / span) * plotHeight;
+    return { x, y, value, timestamp: history[index].date };
+  });
+  const points = coords.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
+  const area = `${left},${height - bottom} ${points} ${width - right},${height - bottom}`;
   const first = values[0];
   const last = values[values.length - 1];
   const tone = last >= first ? "positive" : "negative";
+  const highIndex = values.indexOf(max);
+  const lowIndex = values.indexOf(min);
+  const high = coords[highIndex];
+  const low = coords[lowIndex];
+  const highAnchorEnd = high.x > width * 0.72;
+  const lowAnchorEnd = low.x > width * 0.72;
+  const highLabelX = clampNumber(high.x + (highAnchorEnd ? -10 : 10), left, width - right);
+  const lowLabelX = clampNumber(low.x + (lowAnchorEnd ? -10 : 10), left, width - right);
+  const highLabelY = clampNumber(high.y - 12, 18, height - bottom - 8);
+  const lowLabelY = clampNumber(low.y + 24, top + 18, height - bottom - 6);
+  const tickIndexes = [0, Math.floor((coords.length - 1) / 3), Math.floor(((coords.length - 1) * 2) / 3), coords.length - 1].filter(
+    (value, index, array) => array.indexOf(value) === index,
+  );
+  const ticks = tickIndexes
+    .map((index) => {
+      const point = coords[index];
+      return `
+        <g class="chart-tick">
+          <line x1="${point.x.toFixed(1)}" x2="${point.x.toFixed(1)}" y1="${top}" y2="${height - bottom}" />
+          <text x="${point.x.toFixed(1)}" y="${height - 12}">${escapeHtml(formatAxisLabel(point.timestamp, range))}</text>
+        </g>
+      `;
+    })
+    .join("");
+  const clipId = `priceClip-${range}`;
   return `
     <svg class="price-chart ${tone}" viewBox="0 0 ${width} ${height}" role="img" aria-label="선택 기간 주가 그래프">
-      <polygon points="${area}" />
-      <polyline points="${points}" />
-      <text x="${padding}" y="24">$${max.toFixed(2)}</text>
-      <text x="${padding}" y="${height - 8}">$${min.toFixed(2)}</text>
+      <defs>
+        <clipPath id="${clipId}">
+          <rect x="${left}" y="${top}" width="${plotWidth}" height="${plotHeight}" rx="2" />
+        </clipPath>
+      </defs>
+      <line class="chart-baseline" x1="${left}" x2="${width - right}" y1="${height - bottom}" y2="${height - bottom}" />
+      ${ticks}
+      <g clip-path="url(#${clipId})">
+        <polygon points="${area}" />
+        <polyline points="${points}" />
+      </g>
+      <g class="price-point-label high">
+        <circle cx="${high.x.toFixed(1)}" cy="${high.y.toFixed(1)}" r="4" />
+        <text x="${highLabelX.toFixed(1)}" y="${highLabelY.toFixed(1)}" text-anchor="${highAnchorEnd ? "end" : "start"}">$${max.toFixed(2)}</text>
+      </g>
+      <g class="price-point-label low">
+        <circle cx="${low.x.toFixed(1)}" cy="${low.y.toFixed(1)}" r="4" />
+        <text x="${lowLabelX.toFixed(1)}" y="${lowLabelY.toFixed(1)}" text-anchor="${lowAnchorEnd ? "end" : "start"}">$${min.toFixed(2)}</text>
+      </g>
     </svg>
   `;
 }
@@ -1326,7 +1389,7 @@ async function renderPriceSnapshot(company) {
         <div class="range-control" aria-label="주가 차트 기간 선택">
           ${rangeControls}
         </div>
-        ${renderSparkline(data.history || [])}
+        ${renderSparkline(data.history || [], data.range || selectedPriceRange)}
       </section>
       <section class="target-list">
         <div class="target-heading">

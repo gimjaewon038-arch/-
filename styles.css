@@ -657,9 +657,9 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
 
 .price-chart {
   width: 100%;
-  min-height: 210px;
+  min-height: 260px;
   display: block;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .price-chart polygon {
@@ -669,7 +669,7 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
 .price-chart polyline {
   fill: none;
   stroke: var(--accent);
-  stroke-width: 4;
+  stroke-width: 5;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -686,6 +686,49 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   fill: var(--muted);
   font-size: 12px;
   font-weight: 800;
+}
+
+.chart-baseline,
+.chart-tick line {
+  stroke: #dbe6e2;
+  stroke-width: 1;
+}
+
+.chart-tick line {
+  opacity: 0.65;
+}
+
+.chart-tick text {
+  text-anchor: middle;
+  fill: #71817c;
+  font-size: 11px;
+}
+
+.price-point-label circle {
+  fill: #ffffff;
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+.price-chart.negative .price-point-label circle {
+  stroke: var(--red);
+}
+
+.price-point-label text {
+  paint-order: stroke;
+  stroke: #ffffff;
+  stroke-width: 5;
+  stroke-linejoin: round;
+  fill: #53635e;
+  font-size: 13px;
+}
+
+.price-point-label.high text {
+  fill: var(--red);
+}
+
+.price-point-label.low text {
+  fill: #2563eb;
 }
 
 .price-chart-empty {
