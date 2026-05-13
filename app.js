@@ -508,6 +508,59 @@ const latestRevaluationNotes = {
   IONQ: "양자컴퓨팅 장기 기대는 유지되지만 금리 상승기에는 현금흐름 가시성이 낮은 초기 성장주 할인폭이 커져 점수를 낮췄습니다.",
 };
 
+const scoringNarratives = {
+  AAPL: {
+    positives: ["Q2 매출 1112억 달러와 EPS 2.01달러가 시장 예상보다 견조했습니다.", "서비스 매출 최고치와 1000억 달러 자사주 매입은 현금흐름과 주주환원 신뢰도를 높였습니다."],
+    negatives: ["iPhone 교체 사이클과 중국 수요 둔화 우려는 성장 점수 상단을 제한합니다.", "금리 상승은 대형 기술주 멀티플 확장에는 부담입니다."],
+    conflict: "서비스·자사주 매입은 펀더멘탈을 올리지만, 하드웨어 성장 둔화와 고금리가 성장 프리미엄을 깎아 composite score는 강하지만 과열 구간까지는 올리지 않았습니다.",
+  },
+  NVDA: {
+    positives: ["AI 데이터센터 수요와 대형 클라우드 CAPEX 기대가 성장성과 가이던스를 계속 지지합니다.", "높은 매출총이익률과 생태계 지배력은 수익성 점수의 핵심 근거입니다."],
+    negatives: ["기술주 쏠림과 고멀티플 부담이 커졌고, 10년물 금리 상승은 장기 성장 현금흐름의 현재가치를 낮춥니다.", "수출 규제와 공급망 제약은 정책·리스크 점수에서 할인했습니다."],
+    conflict: "기업 뉴스는 매우 강하지만 매크로 뉴스는 불리합니다. 그래서 growth/guidance는 높게 유지하고, rateSensitivity와 macroRegime은 낮춰 종합 점수의 과도한 상승을 막았습니다.",
+  },
+  TSLA: {
+    positives: ["에너지 저장 8.8GWh와 장기 자율주행·로보택시 내러티브는 성장 선택지를 유지합니다."],
+    negatives: ["Q1 인도 35만8023대는 기대보다 약했고 EV 수요·가격 경쟁·재고 부담이 가이던스 신뢰도를 낮췄습니다.", "고금리와 유가 상승은 소비자의 자동차 구매 여력과 금융비용에 동시에 부담입니다."],
+    conflict: "장기 옵션 가치는 남아 있지만 단기 실적 뉴스와 매크로가 같은 방향으로 불리해 growth, guidance, external environment를 모두 낮췄습니다.",
+  },
+  JPM: {
+    positives: ["Q1 순이익 165억 달러와 CIB·시장 부문 강세는 수익성과 펀더멘탈을 지지합니다.", "높은 금리는 예금 베타가 통제되는 동안 순이자마진 방어에 도움이 됩니다."],
+    negatives: ["신용 사이클 둔화와 규제 자본 부담은 리스크 점수를 낮추지 못하게 하는 요인입니다.", "경기 둔화가 심해지면 대손비용 상승으로 현재 금리 수혜가 상쇄될 수 있습니다."],
+    conflict: "금리 상승은 은행에 부분 호재지만 신용 리스크에는 악재입니다. 그래서 rateSensitivity는 높게 두되 macroRegime과 sectorMomentum은 보수적으로 조정했습니다.",
+  },
+  XOM: {
+    positives: ["유가 100달러 부근과 에너지 섹터 강세는 현금흐름과 자본환원 기대를 높입니다.", "업스트림·정제 포트폴리오와 재무 체력은 펀더멘탈 점수를 지지합니다."],
+    negatives: ["정책·환경 규제와 유가 급등 이후 수요 파괴 가능성은 리스크입니다.", "에너지 가격이 물가를 자극하면 시장 전체 위험선호에는 역풍이 됩니다."],
+    conflict: "유가 상승은 XOM에는 직접 호재지만 시장 전체에는 물가 악재입니다. 따라서 company/external 점수는 올렸지만 policyImpact는 낮게 유지했습니다.",
+  },
+  HIMS: {
+    positives: ["Q1 매출 6.08억 달러는 여전히 높은 성장률을 보여줍니다.", "구독형 원격진료 모델은 장기 TAM 관점에서 매력적입니다."],
+    negatives: ["GLP-1 전략 전환 비용, 순손실, EBITDA 전망 하향은 수익성·가이던스 점수를 낮췄습니다.", "정책·의료 규제 민감도와 고금리 성장주 할인은 리스크를 키웁니다."],
+    conflict: "매출 성장 뉴스는 좋지만 수익성 뉴스가 더 나빠졌습니다. 그래서 growth는 높게 남기되 profitability, guidance, companyRisk를 크게 조정했습니다.",
+  },
+  OSCR: {
+    positives: ["Q1 매출 46억 달러, MLR 개선, 순이익 6.79억 달러가 수익성 전환 신뢰도를 높였습니다.", "2026년 가이던스 재확인은 guidance 점수 상향 근거입니다."],
+    negatives: ["ACA·의료보험 정책 변화와 의료비 추세는 여전히 핵심 리스크입니다.", "헬스케어 섹터 상대강도가 약해 sectorMomentum은 크게 올리지 않았습니다."],
+    conflict: "회사 뉴스는 강하지만 섹터와 정책 환경은 완전히 우호적이지 않습니다. 그래서 company factors는 올리고 external environment는 중립권에 뒀습니다.",
+  },
+  PLTR: {
+    positives: ["정부·상업 AI 플랫폼 도입과 AIP 수요는 성장성과 가이던스를 지지합니다.", "소프트웨어 마진 구조와 현금흐름은 수익성 점수에 긍정적입니다."],
+    negatives: ["고멀티플 AI 소프트웨어라는 점에서 금리 상승과 crowding 리스크가 큽니다.", "정부 예산과 조달 사이클은 정책 영향의 변동성을 만듭니다."],
+    conflict: "AI 수요는 강하지만 할인율도 높아졌습니다. 그래서 growth/guidance는 올리고 rateSensitivity는 낮춰 균형을 맞췄습니다.",
+  },
+  CRWD: {
+    positives: ["사이버보안 지출은 경기 둔화에도 상대적으로 방어적이고 플랫폼 통합 수요가 이어집니다.", "반복매출과 높은 고객 유지율이 펀더멘탈을 지지합니다."],
+    negatives: ["소프트웨어 밸류에이션과 경쟁 강도는 리스크입니다.", "금리 상승은 ARR 성장주의 멀티플 확장에는 부담입니다."],
+    conflict: "섹터 뉴스는 우호적이지만 금리는 부담입니다. 그래서 sectorMomentum은 올리고 rateSensitivity는 보수적으로 반영했습니다.",
+  },
+  IONQ: {
+    positives: ["양자컴퓨팅 상용화 기대와 기술 내러티브는 장기 성장 옵션을 유지합니다."],
+    negatives: ["현금흐름 가시성이 낮고 수익성 점수가 낮아 고금리 환경에서 할인폭이 큽니다.", "투기적 성장주는 위험선호가 약해질 때 점수 하락 폭이 큽니다."],
+    conflict: "기술 기대는 있지만 실적 근거와 매크로가 약합니다. 그래서 growth는 완전히 꺾지 않고, profitability/fundamentals/rateSensitivity에서 큰 폭으로 할인했습니다.",
+  },
+};
+
 const marketBriefCards = [
   {
     label: "시장 레짐",
@@ -601,6 +654,93 @@ function calculateComposite(scores) {
   return clamp(companyPart + externalPart);
 }
 
+function companyPartScore(scores) {
+  return clamp(
+    scores.growth * 0.24 +
+      scores.profitability * 0.23 +
+      scores.fundamentals * 0.24 +
+      scores.guidance * 0.17 +
+      (100 - scores.companyRisk) * 0.12,
+  );
+}
+
+function externalPartScore(scores) {
+  return clamp(
+    scores.macroRegime * 0.32 +
+      scores.rateSensitivity * 0.24 +
+      scores.policyImpact * 0.16 +
+      scores.sectorMomentum * 0.16 +
+      scores.cycleFit * 0.12,
+  );
+}
+
+function getNarrative(company) {
+  const fallback = latestRevaluationNotes[company.ticker] || `${company.sector}의 최신 뉴스, 공시, 매크로, 섹터 흐름을 반영해 재평가했습니다.`;
+  return (
+    scoringNarratives[company.ticker] || {
+      positives: [`${company.name}의 핵심 사업과 섹터 수요를 반영했습니다.`, fallback],
+      negatives: ["금리 상승, 물가 부담, 섹터 상대강도 변화는 외부 환경 점수에서 할인했습니다."],
+      conflict: "회사 자체 요인과 외부 환경을 분리해 평가했습니다. 기업 뉴스가 좋아도 매크로가 불리하면 composite score 상승폭은 제한됩니다.",
+    }
+  );
+}
+
+function scoreBandText(score) {
+  if (score >= 75) return "강함";
+  if (score >= 60) return "우호";
+  if (score >= 45) return "중립";
+  return "부담";
+}
+
+function factorNarrative(key, company, scores) {
+  const narrative = getNarrative(company);
+  const positive = narrative.positives[0] || latestRevaluationNotes[company.ticker] || company.profile;
+  const negative = narrative.negatives[0] || "금리와 섹터 흐름은 점수의 할인 요인입니다.";
+  const map = {
+    growth: {
+      evidence: [positive, `가이던스 ${scores.guidance}점과 섹터 모멘텀 ${scores.sectorMomentum}점이 성장 점수의 확인 지표입니다.`],
+      conflict: `${negative} 그래서 성장 스토리가 있어도 수요 확인과 마진 동반 여부를 같이 봅니다.`,
+    },
+    profitability: {
+      evidence: [narrative.positives[1] || positive, `수익성 ${scores.profitability}점은 마진 방어력과 비용 통제 신호를 같이 반영합니다.`],
+      conflict: `${negative} 매출 성장이 좋아도 비용 증가나 전망 하향이 나오면 수익성 점수는 내려갑니다.`,
+    },
+    fundamentals: {
+      evidence: [positive, `펀더멘탈은 현금흐름, 경쟁 우위, 재무 체력, 반복매출 성격을 함께 봅니다.`],
+      conflict: `${narrative.conflict} 좋은 뉴스가 단기 이벤트인지 구조적 체력 개선인지를 나눠 반영했습니다.`,
+    },
+    guidance: {
+      evidence: [latestRevaluationNotes[company.ticker] || positive, `경영진 전망, 실적 발표, 공시, 최근 수요 뉴스가 가이던스 점수의 직접 근거입니다.`],
+      conflict: `${negative} 긍정 뉴스와 부정 뉴스가 상충하면 다음 분기 가시성에 더 큰 영향을 주는 쪽을 우선했습니다.`,
+    },
+    companyRisk: {
+      evidence: [negative, `리스크 점수는 높을수록 부담이며 composite score에서는 100점에서 차감됩니다.`],
+      conflict: `${positive} 다만 긍정 뉴스가 있어도 규제, 밸류에이션, 재무 부담이 크면 리스크 할인은 남깁니다.`,
+    },
+    macroRegime: {
+      evidence: [`${macroState.cpi.label} ${macroState.cpi.value}, ${macroState.tenYear.label} ${macroState.tenYear.value}, ${macroState.ism.label} ${macroState.ism.value}를 종목 민감도에 매핑했습니다.`, positive],
+      conflict: `${narrative.conflict} 특히 회사 뉴스와 매크로 방향이 반대일 때는 외부 환경 점수를 독립적으로 낮춥니다.`,
+    },
+    rateSensitivity: {
+      evidence: [`듀레이션 민감도 ${company.sensitivity.duration.toFixed(2)}와 10년물 ${macroState.tenYear.value}를 반영했습니다.`, `금리 민감도 점수 ${scores.rateSensitivity}점은 높을수록 현재 금리 환경을 잘 견딘다는 뜻입니다.`],
+      conflict: company.sensitivity.duration > 0.7 ? "장기 성장주는 좋은 실적 뉴스가 나와도 금리 상승이 멀티플을 압박해 점수 상승을 제한합니다." : "금리 상승이 모든 종목에 악재는 아닙니다. 은행·에너지·현금흐름 우량주는 상대적으로 방어적일 수 있습니다.",
+    },
+    policyImpact: {
+      evidence: [`정책 민감도 ${company.sensitivity.policy.toFixed(2)}와 업종별 규제·보조금·정부 지출 뉴스를 반영했습니다.`, narrative.negatives[1] || negative],
+      conflict: "정책은 호재와 악재가 동시에 존재할 수 있어, 수요를 키우는 정책과 규제를 강화하는 정책을 분리해 보수적으로 반영했습니다.",
+    },
+    sectorMomentum: {
+      evidence: [`메인 섹터 그래프에서 ${company.sector} 관련 상대강도와 동종 업종 뉴스 흐름을 반영했습니다.`, `현재 섹터 모멘텀은 ${scores.sectorMomentum}점으로 ${scoreBandText(scores.sectorMomentum)} 구간입니다.`],
+      conflict: "개별 기업 뉴스가 좋아도 같은 섹터에서 자금이 빠지면 단기 점수 상승은 제한됩니다. 반대로 섹터 자금 유입은 약한 기업 뉴스 일부를 완충할 수 있습니다.",
+    },
+    cycleFit: {
+      evidence: [`경기 민감도 ${company.sensitivity.cyclical.toFixed(2)}와 현재 물가·유가·소비·제조업 흐름을 연결했습니다.`, latestRevaluationNotes[company.ticker] || positive],
+      conflict: "현재 경기 국면과 사업모델이 맞으면 뉴스 반영 속도를 높이고, 어긋나면 좋은 뉴스라도 지속성을 낮게 봅니다.",
+    },
+  };
+  return map[key];
+}
+
 function buildTimeline(company) {
   const latestNote = latestRevaluationNotes[company.ticker] || `${company.sector}의 최신 뉴스, 금리, 정책, 섹터 상대강도를 반영해 기본 점수를 다시 산정했습니다.`;
   const base = [
@@ -661,6 +801,7 @@ function factorLabel(key) {
 function factorDetail(key, company, scores) {
   const value = scores[key];
   const band = value >= 75 ? "높은 점수" : value >= 55 ? "중간 점수" : "낮은 점수";
+  const narrative = factorNarrative(key, company, scores);
   const details = {
     growth: {
       reason: `${company.name}의 성장성은 ${company.sector} 내 수요 확장, 제품 채택 속도, 최근 가이던스 신뢰도를 반영해 ${value}점으로 평가했습니다.`,
@@ -713,7 +854,11 @@ function factorDetail(key, company, scores) {
       risks: ["현재 사이클과 사업모델이 어긋나면 뉴스가 좋아도 외부 환경 점수는 제한됩니다."],
     },
   };
-  return details[key];
+  return {
+    ...details[key],
+    evidence: narrative.evidence,
+    conflict: narrative.conflict,
+  };
 }
 
 function renderCompanyList() {
@@ -752,9 +897,19 @@ function renderFactorDetail(containerId, key, company, scores) {
   container.innerHTML = `
     <h3>${factorLabel(key)} · ${scores[key]}점</h3>
     <p>${detail.reason}</p>
+    <div class="reason-block positive">
+      <strong>점수에 반영한 뉴스·근거</strong>
+      <ul>
+        ${detail.evidence.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+      </ul>
+    </div>
+    <div class="reason-block mixed">
+      <strong>상충 요인과 최종 판단</strong>
+      <p>${escapeHtml(detail.conflict)}</p>
+    </div>
     <ul>
-      ${detail.drivers.map((item) => `<li>${item}</li>`).join("")}
-      ${detail.risks.map((item) => `<li>${item}</li>`).join("")}
+      ${detail.drivers.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
+      ${detail.risks.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}
     </ul>
   `;
 }
@@ -1154,17 +1309,19 @@ function companyEventImpact(company) {
 
 function renderMemo(company, scores, composite) {
   const memo = document.querySelector("#memo");
+  const narrative = getNarrative(company);
   const latestNote = latestRevaluationNotes[company.ticker] || `${company.sector}의 최신 뉴스와 거시 환경을 반영해 기본 점수를 업데이트했습니다.`;
   const riskTone = scores.companyRisk >= 55 ? "리스크가 높은 편이라 점수 상승에도 확신도는 제한됩니다." : "리스크가 통제 가능한 수준이라 펀더멘탈 점수의 설명력이 높습니다.";
   const rateTone = scores.rateSensitivity < 50 ? "현재 금리 레벨은 밸류에이션에 부담입니다." : "현재 금리 환경은 비즈니스 모델에 중립 이상으로 작용합니다.";
   const policyTone = scores.policyImpact < 55 ? "정책 변수는 단기 불확실성으로 남아 있습니다." : "정책 환경은 상대적으로 우호적이거나 관리 가능한 수준입니다.";
   const sectorTone = scores.sectorMomentum >= 65 ? `${company.sector}의 상대 강도는 종합 점수를 지지합니다.` : `${company.sector}의 상대 강도는 아직 강한 확인 신호가 아닙니다.`;
   const cards = [
-    ["최신 재평가", latestNote],
-    ["기업 요인", `${company.name}의 성장성 ${scores.growth}, 수익성 ${scores.profitability}, 펀더멘탈 ${scores.fundamentals}을 반영했습니다. ${riskTone}`],
-    ["매크로 요인", `매크로 레짐 ${scores.macroRegime}, 금리 민감도 ${scores.rateSensitivity}입니다. Hot CPI와 유가 상승 때문에 ${rateTone}`],
-    ["섹터 요인", `섹터 모멘텀 ${scores.sectorMomentum}, 사이클 적합도 ${scores.cycleFit}입니다. ${sectorTone}`],
-    ["정책 요인", `정책 영향 점수는 ${scores.policyImpact}입니다. ${policyTone} 현재 종합 점수는 ${composite}입니다.`],
+    ["Composite 결론", `종합 ${composite}점은 회사 자체 ${companyPartScore(scores)}점, 외부 환경 ${externalPartScore(scores)}점을 합산한 결과입니다. ${narrative.conflict}`],
+    ["점수 상승 근거", narrative.positives.join(" ")],
+    ["점수 하락 근거", narrative.negatives.join(" ")],
+    ["최신 재평가", `${latestNote} ${riskTone}`],
+    ["매크로·섹터 판단", `매크로 레짐 ${scores.macroRegime}, 금리 민감도 ${scores.rateSensitivity}, 섹터 모멘텀 ${scores.sectorMomentum}, 사이클 적합도 ${scores.cycleFit}입니다. Hot CPI와 유가 상승 때문에 ${rateTone} ${sectorTone}`],
+    ["정책 요인", `정책 영향 점수는 ${scores.policyImpact}입니다. ${policyTone}`],
   ];
 
   memo.innerHTML = cards
@@ -1308,8 +1465,11 @@ function render() {
   document.querySelector("#compositeScore").textContent = composite;
   document.querySelector("#scoreDelta").textContent = `${delta >= 0 ? "+" : ""}${delta}`;
   document.querySelector("#scoreDelta").style.color = delta >= 0 ? "var(--green)" : "var(--red)";
-  document.querySelector("#compositeSummary").textContent =
-    "뉴스·가이던스, 펀더멘탈, 매크로 레짐, 금리, 정책, 섹터 사이클을 분리 평가한 뒤 가중 합산했습니다.";
+  const narrative = getNarrative(company);
+  document.querySelector("#compositeSummary").innerHTML = `
+    <strong>회사 ${companyPartScore(scores)}점 · 외부환경 ${externalPartScore(scores)}점</strong>
+    <span>${escapeHtml(narrative.conflict)}</span>
+  `;
   document.querySelector("#compositeMeter").style.width = `${composite}%`;
   document.querySelector("#lastUpdated").textContent = `Updated ${new Date().toISOString().slice(0, 10)}`;
   const revaluationDone = Boolean(revision?.applied?.companyGuidance && revision?.applied?.macroRates);

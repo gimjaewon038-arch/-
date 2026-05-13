@@ -421,6 +421,17 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   line-height: 1.5;
 }
 
+#compositeSummary strong,
+#compositeSummary span {
+  display: block;
+}
+
+#compositeSummary strong {
+  color: #1f2f2b;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
 .meter {
   height: 10px;
   background: #e1e8e5;
@@ -516,6 +527,41 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   color: #394944;
   font-size: 13px;
   line-height: 1.55;
+}
+
+.reason-block {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+}
+
+.reason-block.positive {
+  border-left: 4px solid var(--green);
+}
+
+.reason-block.mixed {
+  border-left: 4px solid var(--amber);
+}
+
+.reason-block strong {
+  display: block;
+  color: #1f2f2b;
+  font-size: 12px;
+  margin-bottom: 6px;
+}
+
+.reason-block p,
+.reason-block ul {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.reason-block ul {
+  padding-left: 18px;
 }
 
 .content-grid {
