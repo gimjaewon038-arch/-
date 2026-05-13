@@ -977,11 +977,12 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   display: grid;
   grid-template-columns: minmax(180px, 0.8fr) minmax(240px, 1fr) minmax(180px, 0.8fr);
   gap: 16px;
-  align-items: stretch;
+  align-items: start;
 }
 
 .flow-column {
   display: grid;
+  grid-template-rows: 22px repeat(3, minmax(86px, 1fr));
   gap: 10px;
 }
 
@@ -995,6 +996,7 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   border-radius: 8px;
   background: #f8faf9;
   padding: 12px;
+  min-height: 86px;
 }
 
 .flow-node strong,
@@ -1030,15 +1032,25 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
 
 .flow-links {
   display: grid;
+  grid-template-rows: 22px repeat(3, minmax(86px, 1fr));
   gap: 10px;
-  align-content: center;
+}
+
+.flow-links::before {
+  content: "이동 추정";
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .flow-link {
   position: relative;
-  border-radius: 999px;
+  display: grid;
+  align-content: center;
+  min-height: 86px;
+  border-radius: 8px;
   background: #edf5f3;
-  padding: 10px 42px 10px 14px;
+  padding: 12px 42px 12px 14px;
   border: 1px solid var(--line);
 }
 
@@ -1434,10 +1446,12 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   display: flex;
   align-items: center;
   padding-left: 12px;
-  color: #213631;
+  color: #ffffff;
   font-size: 12px;
   font-style: normal;
   font-weight: 800;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  z-index: 1;
 }
 
 .sector-bar > em {
