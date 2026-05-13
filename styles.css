@@ -736,6 +736,60 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   fill: #2563eb;
 }
 
+.hover-layer {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+.price-chart.hovering .hover-layer {
+  opacity: 1;
+}
+
+.hover-line {
+  stroke: rgba(55, 65, 81, 0.58);
+  stroke-width: 1.4;
+  stroke-dasharray: 4 4;
+}
+
+.hover-dot {
+  fill: #ffffff;
+  stroke: var(--accent);
+  stroke-width: 3;
+}
+
+.price-chart.negative .hover-dot {
+  stroke: var(--red);
+}
+
+.hover-tooltip rect {
+  fill: rgba(255, 255, 255, 0.92);
+  stroke: rgba(219, 230, 226, 0.98);
+  stroke-width: 1;
+  filter: drop-shadow(0 8px 18px rgba(15, 23, 42, 0.16));
+}
+
+.hover-tooltip text {
+  stroke: none;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.hover-tooltip .hover-date {
+  fill: #6b7b76;
+}
+
+.hover-tooltip .hover-price {
+  fill: #182824;
+  font-size: 14px;
+}
+
+.hover-hit {
+  fill: transparent;
+  pointer-events: all;
+  cursor: crosshair;
+}
+
 .price-chart-empty {
   min-height: 210px;
   display: grid;

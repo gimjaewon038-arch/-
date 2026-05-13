@@ -1262,6 +1262,14 @@ function formatAxisLabel(timestamp, range) {
   return `${date.getMonth() + 1}/${date.getDate()}`;
 }
 
+function formatTooltipDate(timestamp, range) {
+  const date = new Date(Number(timestamp) * 1000);
+  if (Number.isNaN(date.getTime())) return "";
+  const dateLabel = date.toLocaleDateString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit" });
+  const timeLabel = date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit", hour12: false });
+  return range === "1D" || range === "5D" ? `${dateLabel} ${timeLabel}` : dateLabel;
+}
+
 function chartLabel(point, preferredDirection, bounds) {
   const edgePad = 12;
   const rectWidth = 68;
@@ -1317,6 +1325,12 @@ function renderSparkline(history, range = selectedPriceRange) {
   const labelBounds = { width, height, left, right, top, bottom };
   const highLabel = chartLabel(high, "above", labelBounds);
   const lowLabel = chartLabel(low, "above", labelBounds);
+  const hoverPoints = coords
+    .map(
+      (point) =>
+        `<circle class="hover-hit" cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="10" data-x="${point.x.toFixed(1)}" data-y="${point.y.toFixed(1)}" data-price="${point.value.toFixed(2)}" data-date="${escapeHtml(formatTooltipDate(point.timestamp, range))}" />`,
+    )
+    .join("");
   const tickIndexes = [0, Math.floor((coords.length - 1) / 3), Math.floor(((coords.length - 1) * 2) / 3), coords.length - 1].filter(
     (value, index, array) => array.indexOf(value) === index,
   );
@@ -1355,8 +1369,65 @@ function renderSparkline(history, range = selectedPriceRange) {
         <rect x="${lowLabel.rectX.toFixed(1)}" y="${lowLabel.rectY.toFixed(1)}" width="${lowLabel.rectWidth}" height="${lowLabel.rectHeight}" rx="7" />
         <text x="${lowLabel.textX.toFixed(1)}" y="${lowLabel.textY.toFixed(1)}" text-anchor="middle" dominant-baseline="middle">$${min.toFixed(2)}</text>
       </g>
+      <g class="hover-layer">
+        <line class="hover-line" x1="0" x2="0" y1="${top}" y2="${height - bottom}" />
+        <circle class="hover-dot" cx="0" cy="0" r="5" />
+        <g class="hover-tooltip">
+          <rect x="0" y="0" width="118" height="44" rx="8" />
+          <text class="hover-date" x="10" y="17"></text>
+          <text class="hover-price" x="10" y="34"></text>
+        </g>
+      </g>
+      <g class="hover-hits">
+        ${hoverPoints}
+      </g>
     </svg>
   `;
+}
+
+function positionChartTooltip(svg, hit) {
+  const x = Number(hit.dataset.x);
+  const y = Number(hit.dataset.y);
+  const tooltip = svg.querySelector(".hover-tooltip");
+  const tooltipWidth = 118;
+  const tooltipHeight = 44;
+  const viewWidth = 720;
+  const viewHeight = 260;
+  const tooltipX = clampNumber(x + 12, 34, viewWidth - tooltipWidth - 34);
+  const tooltipY = clampNumber(y - tooltipHeight - 12, 34, viewHeight - tooltipHeight - 46);
+  svg.classList.add("hovering");
+  svg.querySelector(".hover-line").setAttribute("x1", x);
+  svg.querySelector(".hover-line").setAttribute("x2", x);
+  svg.querySelector(".hover-dot").setAttribute("cx", x);
+  svg.querySelector(".hover-dot").setAttribute("cy", y);
+  tooltip.setAttribute("transform", `translate(${tooltipX.toFixed(1)} ${tooltipY.toFixed(1)})`);
+  tooltip.querySelector(".hover-date").textContent = hit.dataset.date || "";
+  tooltip.querySelector(".hover-price").textContent = `$${Number(hit.dataset.price).toFixed(2)}`;
+}
+
+function setupPriceChartHover() {
+  const svg = document.querySelector("#priceSnapshot .price-chart");
+  if (!svg) return;
+  const hits = [...svg.querySelectorAll(".hover-hit")];
+  function nearestHit(event) {
+    const rect = svg.getBoundingClientRect();
+    const viewX = ((event.clientX - rect.left) / rect.width) * 720;
+    return hits.reduce((nearest, hit) => {
+      const distance = Math.abs(Number(hit.dataset.x) - viewX);
+      return !nearest || distance < nearest.distance ? { hit, distance } : nearest;
+    }, null)?.hit;
+  }
+  hits.forEach((hit) => {
+    hit.addEventListener("pointerenter", () => positionChartTooltip(svg, hit));
+    hit.addEventListener("pointermove", () => positionChartTooltip(svg, hit));
+  });
+  svg.addEventListener("pointermove", (event) => {
+    const hit = nearestHit(event);
+    if (hit) positionChartTooltip(svg, hit);
+  });
+  svg.addEventListener("pointerleave", () => {
+    svg.classList.remove("hovering");
+  });
 }
 
 function renderPriceSnapshotState(message) {
@@ -1420,6 +1491,7 @@ async function renderPriceSnapshot(company) {
         ${targets || `<div class="headline-placeholder">은행별 목표주가 데이터 준비중</div>`}
       </section>
     `;
+    setupPriceChartHover();
   } catch (error) {
     if (selectedTicker !== tickerAtRequest) return;
     renderPriceSnapshotState("현재 주가 API 연결이 필요합니다. server.py로 실행하면 그래프와 목표주가가 표시됩니다.");
