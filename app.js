@@ -1242,36 +1242,35 @@ async function renderMoneyFlow() {
       throw new Error(`Flows request failed: ${response.status}`);
     }
     const data = await response.json();
-    const outflows = (data.outflows || [])
+    const outflowItems = data.outflows || [];
+    const linkItems = data.links || [];
+    const inflowItems = data.inflows || [];
+    const flowRows = [0, 1, 2]
       .map(
-        (item) => `
-          <article class="flow-node weak">
-            <strong>${escapeHtml(item.name)} · ${escapeHtml(item.symbol)}</strong>
-            <span>${escapeHtml(item.group)}</span>
-            <em>${escapeHtml(item.changeLabel)}</em>
-          </article>
-        `,
-      )
-      .join("");
-    const inflows = (data.inflows || [])
-      .map(
-        (item) => `
-          <article class="flow-node strong">
-            <strong>${escapeHtml(item.name)} · ${escapeHtml(item.symbol)}</strong>
-            <span>${escapeHtml(item.group)}</span>
-            <em>${escapeHtml(item.changeLabel)}</em>
-          </article>
-        `,
-      )
-      .join("");
-    const links = (data.links || [])
-      .map(
-        (item) => `
-          <article class="flow-link">
-            <strong>${escapeHtml(item.from)} → ${escapeHtml(item.to)}</strong>
-            <span>${escapeHtml(item.label)}</span>
-            <i style="width:${Number(item.strength) || 18}%"></i>
-          </article>
+        (index) => `
+          <div class="flow-row">
+            ${outflowItems[index] ? `
+              <article class="flow-node weak">
+                <strong>${escapeHtml(outflowItems[index].name)} · ${escapeHtml(outflowItems[index].symbol)}</strong>
+                <span>${escapeHtml(outflowItems[index].group)}</span>
+                <em>${escapeHtml(outflowItems[index].changeLabel)}</em>
+              </article>
+            ` : `<div></div>`}
+            ${linkItems[index] ? `
+              <article class="flow-link">
+                <strong>${escapeHtml(linkItems[index].from)} → ${escapeHtml(linkItems[index].to)}</strong>
+                <span>${escapeHtml(linkItems[index].label)}</span>
+                <i style="width:${Number(linkItems[index].strength) || 18}%"></i>
+              </article>
+            ` : `<div></div>`}
+            ${inflowItems[index] ? `
+              <article class="flow-node strong">
+                <strong>${escapeHtml(inflowItems[index].name)} · ${escapeHtml(inflowItems[index].symbol)}</strong>
+                <span>${escapeHtml(inflowItems[index].group)}</span>
+                <em>${escapeHtml(inflowItems[index].changeLabel)}</em>
+              </article>
+            ` : `<div></div>`}
+          </div>
         `,
       )
       .join("");
@@ -1279,17 +1278,8 @@ async function renderMoneyFlow() {
       <p class="flow-summary">홈페이지 업데이트 관점: 유가·에너지와 방어 현금흐름이 상대적으로 강하고, 고금리에는 장기 성장·소비 민감 영역을 보수적으로 봅니다.</p>
       <p class="flow-summary">${escapeHtml(data.summary || "")}</p>
       <div class="flow-board">
-        <section class="flow-column">
-          <h3>상대 약세</h3>
-          ${outflows}
-        </section>
-        <section class="flow-links">
-          ${links}
-        </section>
-        <section class="flow-column">
-          <h3>상대 강세</h3>
-          ${inflows}
-        </section>
+        <div class="flow-board-head"><h3>상대 약세</h3><h3>이동 추정</h3><h3>상대 강세</h3></div>
+        ${flowRows}
       </div>
       <p class="flow-summary">${escapeHtml(data.note || "")}</p>
     `;

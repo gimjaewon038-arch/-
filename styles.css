@@ -975,18 +975,18 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
 
 .flow-board {
   display: grid;
-  grid-template-columns: minmax(180px, 0.8fr) minmax(240px, 1fr) minmax(180px, 0.8fr);
-  gap: 16px;
-  align-items: start;
-}
-
-.flow-column {
-  display: grid;
-  grid-template-rows: 22px repeat(3, minmax(86px, 1fr));
   gap: 10px;
 }
 
-.flow-column h3 {
+.flow-board-head,
+.flow-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(240px, 1fr) minmax(180px, 0.8fr);
+  gap: 16px;
+  align-items: center;
+}
+
+.flow-board-head h3 {
   margin: 0;
   font-size: 14px;
 }
@@ -1028,19 +1028,6 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
 
 .flow-node.strong em {
   color: var(--green);
-}
-
-.flow-links {
-  display: grid;
-  grid-template-rows: 22px repeat(3, minmax(86px, 1fr));
-  gap: 10px;
-}
-
-.flow-links::before {
-  content: "이동 추정";
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 800;
 }
 
 .flow-link {
@@ -1450,7 +1437,7 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   font-size: 12px;
   font-style: normal;
   font-weight: 800;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.28);
   z-index: 1;
 }
 
