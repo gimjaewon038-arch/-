@@ -1264,27 +1264,23 @@ function formatAxisLabel(timestamp, range) {
 
 function chartLabel(point, preferredDirection, bounds) {
   const edgePad = 12;
-  const textWidth = 58;
-  const textHeight = 18;
+  const rectWidth = 68;
+  const rectHeight = 26;
   const isLeftEdge = point.x < bounds.left + 60;
   const isRightEdge = point.x > bounds.width - bounds.right - 60;
-  const anchor = isRightEdge ? "end" : "start";
-  const xOffset = isRightEdge ? -12 : isLeftEdge ? 12 : 10;
-  const x = clampNumber(point.x + xOffset, bounds.left + edgePad, bounds.width - bounds.right - edgePad);
-  const aboveY = point.y - 14;
-  const belowY = point.y + 28;
+  const desiredRectX = isRightEdge ? point.x - rectWidth - 12 : isLeftEdge ? point.x + 12 : point.x + 10;
+  const aboveY = point.y - rectHeight - 12;
+  const belowY = point.y + 14;
   const wantsAbove = preferredDirection === "above" || belowY > bounds.height - bounds.bottom - 8;
-  const y = clampNumber(wantsAbove ? aboveY : belowY, bounds.top + textHeight, bounds.height - bounds.bottom - 10);
-  const rectX = anchor === "end" ? x - textWidth - 5 : x - 5;
-  const rectY = y - 15;
+  const rectX = clampNumber(desiredRectX, bounds.left + edgePad, bounds.width - bounds.right - rectWidth - edgePad);
+  const rectY = clampNumber(wantsAbove ? aboveY : belowY, bounds.top + edgePad, bounds.height - bounds.bottom - rectHeight - edgePad);
   return {
-    x,
-    y,
-    anchor,
-    rectX: clampNumber(rectX, bounds.left, bounds.width - bounds.right - textWidth - 10),
-    rectY: clampNumber(rectY, bounds.top, bounds.height - bounds.bottom - textHeight),
-    rectWidth: textWidth + 10,
-    rectHeight: textHeight + 7,
+    textX: rectX + rectWidth / 2,
+    textY: rectY + rectHeight / 2,
+    rectX,
+    rectY,
+    rectWidth,
+    rectHeight,
   };
 }
 
@@ -1352,12 +1348,12 @@ function renderSparkline(history, range = selectedPriceRange) {
       <g class="price-point-label high">
         <circle cx="${high.x.toFixed(1)}" cy="${high.y.toFixed(1)}" r="4" />
         <rect x="${highLabel.rectX.toFixed(1)}" y="${highLabel.rectY.toFixed(1)}" width="${highLabel.rectWidth}" height="${highLabel.rectHeight}" rx="7" />
-        <text x="${highLabel.x.toFixed(1)}" y="${highLabel.y.toFixed(1)}" text-anchor="${highLabel.anchor}">$${max.toFixed(2)}</text>
+        <text x="${highLabel.textX.toFixed(1)}" y="${highLabel.textY.toFixed(1)}" text-anchor="middle" dominant-baseline="middle">$${max.toFixed(2)}</text>
       </g>
       <g class="price-point-label low">
         <circle cx="${low.x.toFixed(1)}" cy="${low.y.toFixed(1)}" r="4" />
         <rect x="${lowLabel.rectX.toFixed(1)}" y="${lowLabel.rectY.toFixed(1)}" width="${lowLabel.rectWidth}" height="${lowLabel.rectHeight}" rx="7" />
-        <text x="${lowLabel.x.toFixed(1)}" y="${lowLabel.y.toFixed(1)}" text-anchor="${lowLabel.anchor}">$${min.toFixed(2)}</text>
+        <text x="${lowLabel.textX.toFixed(1)}" y="${lowLabel.textY.toFixed(1)}" text-anchor="middle" dominant-baseline="middle">$${min.toFixed(2)}</text>
       </g>
     </svg>
   `;
