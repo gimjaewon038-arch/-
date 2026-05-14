@@ -163,53 +163,80 @@ let macroState = {
 let macroReports = [
   {
     name: "CPI",
-    date: "N/A",
-    value: "N/A",
-    previous: "N/A",
-    consensus: "N/A",
+    date: "최근 발표",
+    value: "확인 중",
+    previous: "전월",
+    consensus: "시장 예상",
     tone: "mixed",
-    verdict: "데이터 로딩",
-    reason: "매크로 리포트 데이터는 /api/dashboard에서 자동 갱신됩니다.",
+    verdict: "물가 방향 확인",
+    reason: "새 CPI 데이터가 없으면 기존 물가 판단을 유지합니다. 실제값이 예상보다 높으면 금리 부담, 낮으면 성장주 할인율 완화로 해석합니다.",
   },
   {
     name: "Core CPI",
-    date: "N/A",
-    value: "N/A",
-    previous: "N/A",
-    consensus: "N/A",
+    date: "최근 발표",
+    value: "확인 중",
+    previous: "전월",
+    consensus: "시장 예상",
     tone: "mixed",
-    verdict: "데이터 로딩",
-    reason: "매크로 리포트 데이터는 /api/dashboard에서 자동 갱신됩니다.",
+    verdict: "근원물가 점검",
+    reason: "근원물가가 끈적하면 연준 완화 기대가 늦어져 고PER 성장주에 부담이 됩니다. 새 데이터가 없으면 기존 판단을 유지합니다.",
   },
   {
     name: "PPI",
-    date: "N/A",
-    value: "N/A",
-    previous: "N/A",
-    consensus: "N/A",
+    date: "최근 발표",
+    value: "확인 중",
+    previous: "전월",
+    consensus: "시장 예상",
     tone: "mixed",
-    verdict: "데이터 로딩",
-    reason: "매크로 리포트 데이터는 /api/dashboard에서 자동 갱신됩니다.",
+    verdict: "마진 압력 점검",
+    reason: "생산자물가는 기업 원가와 마진 전망에 연결됩니다. 새 데이터가 없으면 기존 원가 압력 판단을 유지합니다.",
   },
   {
     name: "Nonfarm Payrolls",
-    date: "N/A",
-    value: "N/A",
-    previous: "N/A",
-    consensus: "N/A",
+    date: "최근 발표",
+    value: "확인 중",
+    previous: "이전치",
+    consensus: "시장 예상",
     tone: "mixed",
-    verdict: "데이터 로딩",
-    reason: "매크로 리포트 데이터는 /api/dashboard에서 자동 갱신됩니다.",
+    verdict: "경기·임금 신호",
+    reason: "고용은 경기 침체 위험과 임금 물가를 동시에 보여줍니다. 새 데이터가 없으면 기존 경기 판단을 유지합니다.",
   },
   {
     name: "FOMC",
-    date: "N/A",
-    value: "N/A",
-    previous: "N/A",
-    consensus: "N/A",
+    date: "최근 회의",
+    value: "동결/변경 확인",
+    previous: "이전 금리",
+    consensus: "시장 예상",
     tone: "mixed",
-    verdict: "데이터 로딩",
-    reason: "매크로 리포트 데이터는 /api/dashboard에서 자동 갱신됩니다.",
+    verdict: "정책 톤 확인",
+    reason: "연준 발언과 점도표는 금리 민감주와 은행, 성장주의 외부 환경 점수에 반영됩니다. 새 이벤트가 없으면 기존 정책 톤을 유지합니다.",
+  },
+];
+
+let marketNewsCache = [
+  {
+    title: "Market keeps watching inflation, yields, and AI earnings leadership",
+    titleKo: "시장은 물가, 장기금리, AI 실적 주도주 흐름을 계속 주시",
+    source: "호재야호재",
+    published: "기존 뉴스",
+    url: "#",
+    image: "",
+  },
+  {
+    title: "Sector rotation stays split between energy strength and rate-sensitive growth pressure",
+    titleKo: "섹터 순환은 에너지 강세와 금리민감 성장주 부담으로 양분",
+    source: "호재야호재",
+    published: "기존 뉴스",
+    url: "#",
+    image: "",
+  },
+  {
+    title: "Macro data updates will refresh company scores only when new evidence is available",
+    titleKo: "새 근거가 있을 때만 매크로 데이터가 종목 점수에 반영",
+    source: "호재야호재",
+    published: "기존 뉴스",
+    url: "#",
+    image: "",
   },
 ];
 
@@ -1360,7 +1387,12 @@ function renderMacro(containerId = "#macroGrid") {
   grid.innerHTML = "";
   if (containerId === "#overviewMacroGrid") {
     grid.classList.add("macro-report-grid");
-    grid.innerHTML = macroReports
+    const reports = Array.isArray(macroReports) ? macroReports : [];
+    if (!reports.length) {
+      grid.innerHTML = `<div class="headline-placeholder">기존 경제 보고서를 유지 중입니다. 새 리포트가 확인되면 자동으로 교체됩니다.</div>`;
+      return;
+    }
+    grid.innerHTML = reports
       .map(
         (item) => `
           <article class="macro-report-card ${escapeHtml(item.tone)}" tabindex="0">
@@ -1392,6 +1424,10 @@ function renderMacro(containerId = "#macroGrid") {
     `;
     grid.appendChild(card);
   });
+}
+
+function hasUsableMacroReports(items) {
+  return Array.isArray(items) && items.some((item) => item && item.value && item.value !== "N/A" && item.value !== "확인 중");
 }
 
 function renderMarketBrief() {
@@ -1531,6 +1567,12 @@ function renderHeadlines(container, items, listKey) {
       ? `<button class="news-more-button" type="button" data-news-toggle="${escapeHtml(listKey)}" aria-label="${isExpanded ? "뉴스 접기" : "뉴스 더 보기"}" title="${isExpanded ? "뉴스 접기" : "뉴스 더 보기"}">${isExpanded ? "−" : "⋯"}</button>`
       : "";
   container.innerHTML = `${headlines}${toggle}`;
+}
+
+function renderMarketNewsFromCache() {
+  const container = document.querySelector("#marketNews");
+  if (!container) return;
+  renderHeadlines(container, marketNewsCache, "market");
 }
 
 function renderIndicatorState(message) {
@@ -1905,12 +1947,20 @@ async function renderPriceSnapshot(company) {
 
 async function renderMarketNews() {
   const container = document.querySelector("#marketNews");
-  renderHeadlineState(container, "시장 전체 최신 뉴스 헤드라인을 불러오는 중입니다.");
+  if (!marketNewsCache.length) {
+    renderHeadlineState(container, "시장 전체 최신 뉴스 헤드라인을 불러오는 중입니다.");
+  } else {
+    renderMarketNewsFromCache();
+  }
   try {
     const news = await fetchNews(null, "market");
-    renderHeadlines(container, news.items || [], "market");
+    const items = news.items || [];
+    if (items.length) {
+      marketNewsCache = items;
+    }
+    renderMarketNewsFromCache();
   } catch (error) {
-    renderHeadlineState(container, "뉴스 서버 연결이 필요합니다. server.py로 실행하면 시장 헤드라인이 표시됩니다.");
+    renderMarketNewsFromCache();
   }
 }
 
@@ -1971,7 +2021,9 @@ async function loadDashboard() {
     if (!response.ok) return;
     const data = await response.json();
     if (data && data.macroState) macroState = data.macroState;
-    if (data && Array.isArray(data.macroReports)) macroReports = data.macroReports;
+    if (data && Array.isArray(data.macroReports) && hasUsableMacroReports(data.macroReports)) {
+      macroReports = data.macroReports;
+    }
     if (data && Array.isArray(data.marketBriefCards)) marketBriefCards = data.marketBriefCards;
     if (data && data.sectors && Array.isArray(data.sectors.items)) sectors = data.sectors.items;
     if (data && data.sectors && typeof data.sectors.summary === "string") sectorSummary = data.sectors.summary;
