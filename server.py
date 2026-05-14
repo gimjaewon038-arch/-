@@ -20,6 +20,222 @@ DASHBOARD_CACHE = {"expiresAt": 0.0, "payload": None}
 FRED_CACHE = {}
 
 
+def get_indices_summary():
+    with ThreadPoolExecutor(max_workers=12) as executor:
+        quotes = list(executor.map(fetch_yahoo_quote, MARKET_SYMBOLS))
+    fear_greed = fetch_fear_greed()
+    return {"asOf": today_iso(), "summary": build_market_summary(quotes, fear_greed)}
+
+
+def build_google_news_search(news_type, ticker="", name="", sector=""):
+    news_type = (news_type or "company").strip().lower()
+    ticker = (ticker or "").strip()
+    name = (name or "").strip()
+    sector = (sector or "").strip()
+    if news_type == "market":
+        return "CPI core CPI PPI jobs unemployment Fed rates yields oil sector rotation earnings guidance when:7d"
+    if news_type == "related":
+        if not sector:
+            sector = "sector"
+        return f'"{sector}" stocks OR "{sector}" earnings OR "{sector}" guidance macro rates policy when:30d'
+    if not name:
+        name = ticker
+    return f'"{ticker}" "{name}" stock earnings guidance OR SEC filing when:30d'
+
+
+def fetch_google_news_items(news_type, ticker="", name="", sector="", limit=6):
+    search = build_google_news_search(news_type, ticker=ticker, name=name, sector=sector)
+    url = (
+        "https://news.google.com/rss/search?"
+        f"q={quote_plus(search)}&hl=en-US&gl=US&ceid=US:en"
+    )
+    request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    with urlopen(request, timeout=8) as response:
+        xml_body = response.read()
+    root = ET.fromstring(xml_body)
+    raw_items = []
+    for item in root.findall("./channel/item")[: max(1, int(limit))]:
+        title = item.findtext("title", default="").strip()
+        link = item.findtext("link", default="").strip()
+        published = item.findtext("pubDate", default="").strip()
+        source_node = item.find("source")
+        source = source_node.text.strip() if source_node is not None and source_node.text else "Google News"
+        if title:
+            raw_items.append(
+                {
+                    "title": title,
+                    "source": source,
+                    "published": published,
+                    "url": link,
+                }
+            )
+    with ThreadPoolExecutor(max_workers=6) as executor:
+        return list(executor.map(enrich_item, raw_items))
+
+
+POSITIVE_NEWS_KEYWORDS = [
+    "beats",
+    "beat",
+    "raises",
+    "raised",
+    "raise",
+    "upgrade",
+    "upgraded",
+    "record",
+    "surge",
+    "strong",
+    "growth",
+    "profit",
+    "wins",
+    "contract",
+    "approval",
+    "launch",
+    "secures",
+    "partnership",
+    "acquires",
+    "acquisition",
+    "상향",
+    "호조",
+    "급증",
+    "승인",
+    "수주",
+    "계약",
+    "기록",
+    "사상",
+]
+
+NEGATIVE_NEWS_KEYWORDS = [
+    "miss",
+    "misses",
+    "cuts",
+    "cut",
+    "downgrade",
+    "downgraded",
+    "lawsuit",
+    "probe",
+    "investigation",
+    "recall",
+    "delay",
+    "warn",
+    "weak",
+    "drop",
+    "slump",
+    "falls",
+    "halt",
+    "charge",
+    "fine",
+    "layoff",
+    "guidance cut",
+    "하향",
+    "부진",
+    "경고",
+    "조사",
+    "소송",
+    "리콜",
+    "지연",
+    "감원",
+]
+
+
+def classify_headline(headline):
+    text = (headline or "").lower()
+    pos = any(keyword in text for keyword in POSITIVE_NEWS_KEYWORDS)
+    neg = any(keyword in text for keyword in NEGATIVE_NEWS_KEYWORDS)
+    if pos and not neg:
+        return "positive"
+    if neg and not pos:
+        return "negative"
+    if pos and neg:
+        return "mixed"
+    return "neutral"
+
+
+FACTOR_KEYWORDS = {
+    "growth": ["revenue", "sales", "demand", "orders", "subscriber", "ship", "deliver", "growth", "bookings", "users", "MAU", "DAU", "매출", "수요", "주문", "가입", "사용자"],
+    "profitability": ["margin", "profit", "operating", "gross margin", "EBITDA", "cash flow", "FCF", "EPS", "마진", "이익", "현금흐름"],
+    "fundamentals": ["earnings", "results", "quarter", "Q1", "Q2", "Q3", "Q4", "balance sheet", "guidance", "실적", "분기", "재무"],
+    "guidance": ["guidance", "outlook", "forecast", "raises", "cuts", "reaffirms", "전망", "가이던스", "상향", "하향", "재확인"],
+    "companyRisk": ["lawsuit", "SEC", "probe", "investigation", "recall", "data breach", "hack", "regulator", "antitrust", "소송", "조사", "리콜", "규제", "해킹", "유출"],
+    "macroRegime": ["CPI", "PPI", "jobs", "unemployment", "Fed", "rates", "yield", "inflation", "recession", "oil", "CPI", "PPI", "고용", "실업", "금리", "물가", "유가"],
+    "rateSensitivity": ["rates", "yield", "Treasury", "Fed", "duration", "discount rate", "금리", "국채", "수익률"],
+    "policyImpact": ["policy", "tariff", "ban", "sanction", "subsidy", "regulation", "export", "policy", "정책", "관세", "수출", "규제", "보조금", "제재"],
+    "sectorMomentum": ["sector", "rotation", "ETF", "relative strength", "peers", "industry", "섹터", "로테이션", "상대강도", "업종"],
+    "cycleFit": ["cycle", "late-cycle", "early-cycle", "risk-on", "risk-off", "경기", "사이클", "침체", "회복"],
+}
+
+
+def extract_factor_evidence(items, max_items=2):
+    buckets = {key: [] for key in FACTOR_KEYWORDS.keys()}
+    for item in items or []:
+        title = item.get("title", "") if isinstance(item, dict) else ""
+        lower = title.lower()
+        for factor, keywords in FACTOR_KEYWORDS.items():
+            if len(buckets[factor]) >= max_items:
+                continue
+            if any(keyword.lower() in lower for keyword in keywords):
+                buckets[factor].append(title)
+    return buckets
+
+
+def pick_top_titles(items, sentiment, limit=2):
+    picked = []
+    for item in items or []:
+        title = item.get("title", "") if isinstance(item, dict) else ""
+        if not title:
+            continue
+        if sentiment == classify_headline(title):
+            picked.append(title)
+        if len(picked) >= limit:
+            break
+    return picked
+
+
+def build_revaluation_narrative(ticker, name, sector, company_news, related_news, macro_state, sector_strength, indices_summary):
+    all_news = list(company_news or []) + list(related_news or [])
+    positives = pick_top_titles(company_news, "positive", limit=2)
+    negatives = pick_top_titles(company_news, "negative", limit=2)
+    if not positives:
+        positives = pick_top_titles(related_news, "positive", limit=2)
+    if not negatives:
+        negatives = pick_top_titles(related_news, "negative", limit=2)
+
+    evidence = extract_factor_evidence(all_news, max_items=2)
+    macro_hint = []
+    if isinstance(macro_state, dict):
+        cpi = (macro_state.get("cpi") or {}).get("value")
+        ten = (macro_state.get("tenYear") or {}).get("value")
+        if cpi or ten:
+            macro_hint.append(f"매크로: CPI {cpi or 'N/A'} · 10Y {ten or 'N/A'}")
+    sector_hint = ""
+    if isinstance(sector_strength, dict):
+        sector_hint = sector_strength.get("summary") or ""
+
+    positive_text = positives[0] if positives else f"{name} 관련 최근 뉴스와 수요 흐름을 반영했습니다."
+    negative_text = negatives[0] if negatives else "상충 뉴스가 부족하거나, 금리/정책/섹터 환경이 주요 변동 요인입니다."
+    conflict = "긍정 요인과 부정 요인을 분리해 company factors와 external environment에 각각 반영했습니다."
+    if positives and negatives:
+        conflict = "실적/가이던스 등 긍정 신호가 있어도 금리·정책·섹터 환경이 불리하면 composite score 상승폭을 제한했습니다."
+
+    note_lines = []
+    note_lines.append(f"{today_iso()} 기준 {ticker} 재평가 메모:")
+    if positives:
+        note_lines.append(f"- 긍정: {positives[0]}")
+    if negatives:
+        note_lines.append(f"- 부정: {negatives[0]}")
+    if macro_hint:
+        note_lines.append(f"- {macro_hint[0]}")
+    if sector_hint:
+        note_lines.append(f"- 섹터: {sector_hint}")
+    if indices_summary:
+        note_lines.append(f"- 시장: {indices_summary}")
+
+    return {
+        "note": "\n".join(note_lines),
+        "narrative": {"positives": [positive_text, *positives[1:]], "negatives": [negative_text, *negatives[1:]], "conflict": conflict},
+        "evidenceByFactor": evidence,
+    }
+
+
 class ResearchDeskHandler(SimpleHTTPRequestHandler):
     def end_headers(self):
         parsed = urlparse(self.path)
@@ -39,7 +255,7 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
 
     def do_HEAD(self):
         parsed = urlparse(self.path)
-        if parsed.path in {"/api/news", "/api/indices", "/api/flows", "/api/universe", "/api/price", "/api/dashboard"}:
+        if parsed.path in {"/api/news", "/api/indices", "/api/flows", "/api/universe", "/api/price", "/api/dashboard", "/api/revaluation"}:
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
@@ -50,6 +266,9 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
         parsed = urlparse(self.path)
         if parsed.path == "/api/news":
             self.handle_news(parsed.query)
+            return
+        if parsed.path == "/api/revaluation":
+            self.handle_revaluation(parsed.query)
             return
         if parsed.path == "/api/indices":
             self.handle_indices()
@@ -75,44 +294,51 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
         sector = params.get("sector", [""])[0].strip()
         news_type = params.get("type", ["company"])[0].strip()
 
-        if news_type == "market":
-            search = "CPI core CPI PPI jobs Fed rates yields oil sector rotation earnings guidance when:7d"
-        elif news_type == "related":
-            search = f'"{sector}" stocks OR "{sector}" earnings OR "{sector}" guidance macro rates policy when:30d'
-        else:
-            search = f'"{ticker}" "{name}" stock earnings guidance OR SEC filing when:30d'
-
-        url = (
-            "https://news.google.com/rss/search?"
-            f"q={quote_plus(search)}&hl=en-US&gl=US&ceid=US:en"
-        )
-
         try:
-            request = Request(url, headers={"User-Agent": "Mozilla/5.0"})
-            with urlopen(request, timeout=8) as response:
-                xml_body = response.read()
-            root = ET.fromstring(xml_body)
-            raw_items = []
-            for item in root.findall("./channel/item")[:6]:
-                title = item.findtext("title", default="").strip()
-                link = item.findtext("link", default="").strip()
-                published = item.findtext("pubDate", default="").strip()
-                source_node = item.find("source")
-                source = source_node.text.strip() if source_node is not None and source_node.text else "Google News"
-                if title:
-                    raw_items.append(
-                        {
-                            "title": title,
-                            "source": source,
-                            "published": published,
-                            "url": link,
-                        }
-                    )
-            with ThreadPoolExecutor(max_workers=6) as executor:
-                items = list(executor.map(enrich_item, raw_items))
+            items = fetch_google_news_items(news_type, ticker=ticker, name=name, sector=sector, limit=6)
             self.write_json({"items": items})
         except Exception as error:
             self.write_json({"items": [], "error": str(error)}, status=502)
+
+    def handle_revaluation(self, query):
+        params = parse_qs(query)
+        ticker = normalize_ticker(params.get("ticker", [""])[0])
+        name = params.get("name", [""])[0].strip()
+        sector = params.get("sector", [""])[0].strip()
+        if not ticker:
+            self.write_json({"error": "ticker is required"}, status=400)
+            return
+
+        dashboard = get_dashboard_payload()
+        macro_state = dashboard.get("macroState") if isinstance(dashboard, dict) else {}
+        sector_strength = (dashboard.get("sectors") or {}) if isinstance(dashboard, dict) else {}
+        indices_summary = build_market_summary([], {})  # fallback text
+        try:
+            indices_payload = cached("indices:summary", 60 * 5, lambda: get_indices_summary())
+            indices_summary = indices_payload.get("summary") or indices_summary
+        except Exception:
+            pass
+
+        try:
+            company_news = fetch_google_news_items("company", ticker=ticker, name=name or ticker, sector=sector, limit=10)
+        except Exception:
+            company_news = []
+        try:
+            related_news = fetch_google_news_items("related", ticker=ticker, name=name or ticker, sector=sector, limit=8)
+        except Exception:
+            related_news = []
+
+        narrative = build_revaluation_narrative(ticker, name or ticker, sector, company_news, related_news, macro_state, sector_strength, indices_summary)
+        self.write_json(
+            {
+                "asOf": today_iso(),
+                "ticker": ticker,
+                "name": name,
+                "sector": sector,
+                **narrative,
+                "sources": {"companyNews": company_news[:6], "relatedNews": related_news[:6]},
+            }
+        )
 
     def write_json(self, payload, status=200):
         body = json.dumps(payload).encode("utf-8")
@@ -395,6 +621,19 @@ def build_macro_state():
 def build_macro_reports():
     reports = []
 
+    def estimated_release_date(name, observation_date):
+        if not observation_date:
+            return None
+        if name in {"CPI", "Core CPI"}:
+            return estimate_next_month_release(observation_date, 12)
+        if name.startswith("PPI"):
+            return estimate_next_month_release(observation_date, 13)
+        if name in {"Unemployment Rate", "Nonfarm Payrolls"}:
+            return estimate_next_month_weekday(observation_date, 4, 0)
+        if name == "Fed Funds":
+            return observation_date
+        return observation_date
+
     def report_from_yoy(name, series_id, negative_bias=True):
         yoy = yoy_from_index_series(series_id)
         if not yoy:
@@ -417,6 +656,7 @@ def build_macro_reports():
         return {
             "name": name,
             "date": yoy["date"],
+            "releaseDate": estimated_release_date(name, yoy["date"]),
             "value": f"{yoy['value']:.2f}%",
             "previous": f"{previous:.2f}%" if previous is not None else "N/A",
             "consensus": "N/A",
@@ -456,6 +696,7 @@ def build_macro_reports():
         return {
             "name": name,
             "date": last_date,
+            "releaseDate": estimated_release_date(name, last_date),
             "value": f"{last_value:.2f}{unit}" if unit else f"{last_value:.2f}",
             "previous": f"{prev_value:.2f}{unit}" if unit else f"{prev_value:.2f}",
             "consensus": "N/A",
@@ -878,7 +1119,9 @@ def fetch_price_snapshot(ticker, range_key="3M"):
             "changePercent": round(change_percent, 2) if change_percent is not None else None,
             "history": history[-64:],
             "targets": BANK_PRICE_TARGETS.get(ticker, []),
-            "targetSource": "최근 공개 애널리스트 리포트 스냅샷",
+            "targetsAsOf": None,
+            "targetSource": "최근 공개 애널리스트 리포트 스냅샷(정적 샘플)",
+            "targetsNote": "목표주가는 데모용 정적 스냅샷입니다. 최신 리포트 반영을 위해서는 별도 데이터 소스 연동이 필요합니다.",
         }
     except Exception as error:
         return {
@@ -891,7 +1134,9 @@ def fetch_price_snapshot(ticker, range_key="3M"):
             "changePercent": None,
             "history": [],
             "targets": BANK_PRICE_TARGETS.get(ticker, []),
-            "targetSource": "최근 공개 애널리스트 리포트 스냅샷",
+            "targetsAsOf": None,
+            "targetSource": "최근 공개 애널리스트 리포트 스냅샷(정적 샘플)",
+            "targetsNote": "목표주가는 데모용 정적 스냅샷입니다. 최신 리포트 반영을 위해서는 별도 데이터 소스 연동이 필요합니다.",
             "error": str(error),
         }
 

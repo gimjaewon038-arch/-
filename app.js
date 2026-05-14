@@ -192,53 +192,58 @@ let macroState = {
 const defaultMacroReports = [
   {
     name: "CPI",
-    date: "2026-05-13",
+    date: "2026-04",
+    releaseDate: "2026-05-12",
     value: "3.8%",
     previous: "3.5%",
     consensus: "3.6%",
     tone: "negative",
     verdict: "시장에 부정적",
-    reason: "전날 기준 CPI가 예상치 3.6%와 이전치 3.5%를 웃돌아 금리 인하 기대를 늦추는 요인으로 유지합니다. 새 발표가 없으면 이 데이터를 그대로 둡니다.",
+    reason: "2026년 4월 CPI 발표일(2026-05-12) 기준으로, 예상치 3.6%와 이전치 3.5%를 웃돌아 금리 인하 기대를 늦추는 요인으로 유지합니다.",
   },
   {
     name: "Core CPI",
-    date: "2026-05-13",
+    date: "2026-04",
+    releaseDate: "2026-05-12",
     value: "3.2%",
     previous: "3.1%",
     consensus: "3.1%",
     tone: "negative",
     verdict: "성장주에 부담",
-    reason: "근원 물가가 예상보다 높아 고PER 성장주와 장기 현금흐름 자산의 할인율 부담을 키우는 전날 판단을 유지합니다.",
+    reason: "2026년 4월 Core CPI 발표일(2026-05-12) 기준으로, 근원 물가가 예상보다 높아 고PER 성장주와 장기 현금흐름 자산의 할인율 부담을 키운다는 판단을 유지합니다.",
   },
   {
     name: "PPI",
-    date: "2026-05-13",
+    date: "2026-04",
+    releaseDate: "2026-05-11",
     value: "2.9%",
     previous: "2.6%",
     consensus: "2.7%",
     tone: "negative",
     verdict: "마진에 부담",
-    reason: "생산자물가 상승은 원가와 마진 압박으로 이어질 수 있어 가격 전가력이 약한 소비재·산업재에는 부담이라는 전날 판단을 유지합니다.",
+    reason: "2026년 4월 PPI 발표일(2026-05-11) 기준으로, 생산자물가 상승은 원가와 마진 압박으로 이어질 수 있어 가격 전가력이 약한 소비재·산업재에는 부담이라는 판단을 유지합니다.",
   },
   {
     name: "Nonfarm Payrolls",
-    date: "2026-05-13",
+    date: "2026-04",
+    releaseDate: "2026-05-08",
     value: "214K",
     previous: "188K",
     consensus: "175K",
     tone: "mixed",
     verdict: "해석 엇갈림",
-    reason: "강한 고용은 침체 우려를 낮추지만 임금·서비스 물가 압력을 남깁니다. 경기민감주는 일부 우호, 금리민감 성장주는 부담이라는 전날 판단을 유지합니다.",
+    reason: "2026년 4월 고용보고서 발표일(2026-05-08) 기준으로, 강한 고용은 침체 우려를 낮추지만 임금·서비스 물가 압력을 남깁니다.",
   },
   {
     name: "FOMC",
-    date: "2026-05-13",
+    date: "2026-05",
+    releaseDate: "2026-05-06",
     value: "3.50-3.75%",
     previous: "3.50-3.75%",
     consensus: "동결",
     tone: "mixed",
     verdict: "동결 장기화",
-    reason: "동결 자체는 예상과 같지만 물가 재상승으로 인하 시점이 늦어질 수 있어 은행에는 일부 방어적, 장기 성장주에는 부담이라는 전날 판단을 유지합니다.",
+    reason: "FOMC 발표일(2026-05-06) 기준으로, 동결 자체는 예상과 같지만 물가 재상승으로 인하 시점이 늦어질 수 있어 은행에는 일부 방어적, 장기 성장주에는 부담이라는 판단을 유지합니다.",
   },
 ];
 
@@ -730,6 +735,39 @@ let marketBriefCards = [
   },
 ];
 
+const revaluationCache = new Map();
+const revaluationInFlight = new Set();
+const REVALUATION_TTL_MS = 1000 * 60 * 15;
+
+function getCachedRevaluation(ticker) {
+  const cached = revaluationCache.get(ticker);
+  if (!cached) return null;
+  if (Date.now() - cached.updatedAt > REVALUATION_TTL_MS) return null;
+  return cached.data;
+}
+
+function ensureRevaluation(company) {
+  const ticker = company?.ticker;
+  if (!ticker) return;
+  if (getCachedRevaluation(ticker)) return;
+  if (revaluationInFlight.has(ticker)) return;
+  revaluationInFlight.add(ticker);
+  const url = apiUrl(
+    `/api/revaluation?ticker=${encodeURIComponent(ticker)}&name=${encodeURIComponent(company.name || ticker)}&sector=${encodeURIComponent(company.sector || "")}`,
+  );
+  fetch(url)
+    .then((response) => (response.ok ? response.json() : null))
+    .then((data) => {
+      if (!data || data.error) return;
+      revaluationCache.set(ticker, { updatedAt: Date.now(), data });
+    })
+    .catch(() => {})
+    .finally(() => {
+      revaluationInFlight.delete(ticker);
+      if (currentPage === "detail" && selectedTicker === ticker) render();
+    });
+}
+
 const koreanTickerAliases = {
   AAPL: ["애플", "아이폰", "맥", "서비스"],
   NVDA: ["엔비디아", "앤비디아", "인비디아", "지포스", "ai칩", "인공지능 반도체"],
@@ -909,9 +947,18 @@ function externalPartScore(scores) {
 }
 
 function getNarrative(company) {
+  const apiReval = getCachedRevaluation(company.ticker);
+  const apiNarrative = apiReval && apiReval.narrative ? apiReval.narrative : null;
   const live = liveNewsNarrative(company);
   const fallback = latestRevaluationNotes[company.ticker] || `${company.sector}의 최신 뉴스, 공시, 매크로, 섹터 흐름을 반영해 재평가했습니다.`;
   const staticNarrative = scoringNarratives[company.ticker];
+  if (apiNarrative) {
+    return {
+      positives: [...(apiNarrative.positives || []), ...(live.positives || [])].filter(Boolean),
+      negatives: [...(apiNarrative.negatives || []), ...(live.negatives || [])].filter(Boolean),
+      conflict: apiNarrative.conflict || live.conflict || `${company.name} 뉴스와 외부 환경을 분리해 반영했습니다.`,
+    };
+  }
   if (staticNarrative) {
     return {
       positives: [...staticNarrative.positives, ...(live.positives || [])].filter(Boolean),
@@ -926,6 +973,12 @@ function getNarrative(company) {
       live.conflict ||
       `${company.name}의 개별 뉴스(실적/가이던스/공시)와 ${company.sector} 관련 섹터·매크로 요인을 분리해 반영했습니다. 긍정 뉴스가 있어도 금리/섹터 환경이 불리하면 composite score 상승폭은 제한됩니다.`,
   };
+}
+
+function getLatestRevaluationNote(company) {
+  const apiReval = getCachedRevaluation(company.ticker);
+  if (apiReval && typeof apiReval.note === "string" && apiReval.note.trim()) return apiReval.note.trim();
+  return latestRevaluationNotes[company.ticker] || `${company.sector}의 최신 뉴스와 거시 환경을 반영해 기본 점수를 업데이트했습니다.`;
 }
 
 function formatEvidenceHeadline(item) {
@@ -994,7 +1047,10 @@ function scoreBandText(score) {
 
 function factorNarrative(key, company, scores) {
   const narrative = getNarrative(company);
-  const positive = narrative.positives[0] || latestRevaluationNotes[company.ticker] || company.profile;
+  const apiReval = getCachedRevaluation(company.ticker);
+  const apiEvidence = apiReval && apiReval.evidenceByFactor ? apiReval.evidenceByFactor[key] : null;
+  const evidenceHeadline = Array.isArray(apiEvidence) && apiEvidence.length ? `헤드라인: ${apiEvidence[0]}` : "";
+  const positive = narrative.positives[0] || evidenceHeadline || latestRevaluationNotes[company.ticker] || company.profile;
   const negative = narrative.negatives[0] || "금리와 섹터 흐름은 점수의 할인 요인입니다.";
   const map = {
     growth: {
@@ -1010,7 +1066,7 @@ function factorNarrative(key, company, scores) {
       conflict: `${narrative.conflict} 좋은 뉴스가 단기 이벤트인지 구조적 체력 개선인지를 나눠 반영했습니다.`,
     },
     guidance: {
-      evidence: [latestRevaluationNotes[company.ticker] || positive, `경영진 전망, 실적 발표, 공시, 최근 수요 뉴스가 가이던스 점수의 직접 근거입니다.`],
+      evidence: [getLatestRevaluationNote(company) || positive, `경영진 전망, 실적 발표, 공시, 최근 수요 뉴스가 가이던스 점수의 직접 근거입니다.`],
       conflict: `${negative} 긍정 뉴스와 부정 뉴스가 상충하면 다음 분기 가시성에 더 큰 영향을 주는 쪽을 우선했습니다.`,
     },
     companyRisk: {
@@ -1034,7 +1090,7 @@ function factorNarrative(key, company, scores) {
       conflict: "개별 기업 뉴스가 좋아도 같은 섹터에서 자금이 빠지면 단기 점수 상승은 제한됩니다. 반대로 섹터 자금 유입은 약한 기업 뉴스 일부를 완충할 수 있습니다.",
     },
     cycleFit: {
-      evidence: [`경기 민감도 ${company.sensitivity.cyclical.toFixed(2)}와 현재 물가·유가·소비·제조업 흐름을 연결했습니다.`, latestRevaluationNotes[company.ticker] || positive],
+      evidence: [`경기 민감도 ${company.sensitivity.cyclical.toFixed(2)}와 현재 물가·유가·소비·제조업 흐름을 연결했습니다.`, getLatestRevaluationNote(company) || positive],
       conflict: "현재 경기 국면과 사업모델이 맞으면 뉴스 반영 속도를 높이고, 어긋나면 좋은 뉴스라도 지속성을 낮게 봅니다.",
     },
   };
@@ -1042,40 +1098,41 @@ function factorNarrative(key, company, scores) {
 }
 
 function buildTimeline(company) {
-  const latestNote = latestRevaluationNotes[company.ticker] || `${company.sector}의 최신 뉴스, 금리, 정책, 섹터 상대강도를 반영해 기본 점수를 다시 산정했습니다.`;
+  const today = new Date().toISOString().slice(0, 10);
+  const latestNote = getLatestRevaluationNote(company) || `${company.sector}의 최신 뉴스, 금리, 정책, 섹터 상대강도를 반영해 기본 점수를 다시 산정했습니다.`;
   const base = [
     {
       type: "company",
       title: `${company.ticker} 최신 뉴스 기반 점수 재평가`,
-      date: "2026-05-13",
+      date: today,
       source: "Latest news / filings / macro dashboard",
       summary: latestNote,
     },
     {
       type: "macro",
-      title: "Hot CPI·고유가·금리 동결 장기화 반영",
-      date: "2026-05-13",
+      title: "거시·금리·섹터 환경 반영",
+      date: today,
       source: "Market news / rates / sector rotation",
-      summary: "April CPI가 예상보다 높고 유가가 100달러 부근에서 움직이면서, 고PER 성장주와 소비 민감주는 할인하고 에너지·현금흐름 우량주는 상대적으로 우호적으로 조정했습니다.",
+      summary: "최근 CPI/금리/유가/섹터 상대강도 변화가 종목 민감도에 유리한지 불리한지 분리해 external environment 점수에 반영했습니다.",
     },
     {
       type: "company",
       title: `${company.ticker} 실적 가이던스 반영`,
-      date: "2026-05-10",
+      date: today,
       source: "Company guidance",
       summary: `${company.sector} 내 수요 전망, 마진 방어력, 재고 정상화 속도를 반영해 회사 자체 점수를 갱신했습니다.`,
     },
     {
       type: "macro",
       title: "FOMC와 장기금리 변화 반영",
-      date: "2026-05-08",
+      date: today,
       source: "FRED / Federal Reserve",
       summary: `금리 레벨과 인플레이션 둔화 속도를 ${company.name}의 금리 민감도 프로필에 매핑했습니다.`,
     },
     {
       type: "sector",
       title: `${company.sector} 섹터 상대강도 업데이트`,
-      date: "2026-05-07",
+      date: today,
       source: "Sector ETF model",
       summary: "섹터 ETF 상대 성과와 경기 민감도를 결합해 섹터 모멘텀 및 사이클 적합도를 재평가했습니다.",
     },
@@ -1428,10 +1485,13 @@ function renderMacro(containerId = "#macroGrid") {
     }
     grid.innerHTML = reports
       .map(
-        (item) => `
+        (item) => {
+          const displayDate = item.releaseDate || item.publishedDate || item.date;
+          const periodText = item.period || (item.releaseDate && item.date ? item.date : "");
+          return `
           <article class="macro-report-card ${escapeHtml(item.tone)}" tabindex="0">
             <div>
-              <span>${escapeHtml(item.name)} · ${escapeHtml(item.date)}</span>
+              <span>${escapeHtml(item.name)} · 발표 ${escapeHtml(displayDate)}</span>
               <strong>${escapeHtml(item.value)}</strong>
             </div>
             <em>${escapeHtml(item.verdict)}</em>
@@ -1439,10 +1499,11 @@ function renderMacro(containerId = "#macroGrid") {
             <div class="macro-report-tooltip" role="tooltip">
               <strong>${escapeHtml(item.name)} 해석</strong>
               <p>${escapeHtml(item.reason)}</p>
-              <small>발표 ${escapeHtml(item.date)} · 실제 ${escapeHtml(item.value)} · 예상 ${escapeHtml(item.consensus)} · 이전 ${escapeHtml(item.previous)}</small>
+              <small>발표 ${escapeHtml(displayDate)}${periodText ? ` · 대상 ${escapeHtml(periodText)}` : ""} · 실제 ${escapeHtml(item.value)} · 예상 ${escapeHtml(item.consensus)} · 이전 ${escapeHtml(item.previous)}</small>
             </div>
           </article>
-        `,
+        `;
+        },
       )
       .join("");
     return;
@@ -1673,6 +1734,8 @@ async function renderMoneyFlow() {
       throw new Error(`Flows request failed: ${response.status}`);
     }
     const data = await response.json();
+    const flowBadge = document.querySelector("#flowAsOf");
+    if (flowBadge) flowBadge.textContent = data.asOf ? `ETF proxy · ${data.asOf}` : "ETF proxy · Live";
     const outflowItems = data.outflows || [];
     const linkItems = data.links || [];
     const inflowItems = data.inflows || [];
@@ -1986,6 +2049,7 @@ async function renderPriceSnapshot(company) {
           <strong>은행별 목표주가</strong>
           <span>${escapeHtml(data.targetSource || "최근 공개 리포트")}</span>
         </div>
+        ${data.targetsNote ? `<p class="module-note">${escapeHtml(data.targetsNote)}</p>` : ""}
         ${targets || `<div class="headline-placeholder">은행별 목표주가 데이터 준비중</div>`}
       </section>
     `;
@@ -2072,6 +2136,7 @@ async function loadDashboard() {
     const response = await fetch(apiUrl("/api/dashboard"));
     if (!response.ok) return;
     const data = await response.json();
+    const asOf = data && typeof data.asOf === "string" ? data.asOf : "";
     if (data && data.macroState) macroState = data.macroState;
     if (data && Array.isArray(data.macroReports) && hasUsableMacroReports(data.macroReports)) {
       macroReports = data.macroReports;
@@ -2080,6 +2145,13 @@ async function loadDashboard() {
     if (data && Array.isArray(data.marketBriefCards)) marketBriefCards = data.marketBriefCards;
     if (data && data.sectors && Array.isArray(data.sectors.items)) sectors = data.sectors.items;
     if (data && data.sectors && typeof data.sectors.summary === "string") sectorSummary = data.sectors.summary;
+
+    const briefBadge = document.querySelector("#marketBriefAsOf");
+    if (briefBadge) briefBadge.textContent = asOf ? asOf : "Live";
+    const stackNote = document.querySelector("#dataStackNote");
+    if (stackNote && asOf) {
+      stackNote.textContent = `${asOf} 기준: Google News, Yahoo Finance, FRED/BLS, 기업 실적·공시, ETF proxy를 결합해 재평가합니다.`;
+    }
 
     renderMacro();
     renderMacro("#overviewMacroGrid");
@@ -2118,7 +2190,7 @@ function companyEventImpact(company) {
 function renderMemo(company, scores, composite) {
   const memo = document.querySelector("#memo");
   const narrative = getNarrative(company);
-  const latestNote = latestRevaluationNotes[company.ticker] || `${company.sector}의 최신 뉴스와 거시 환경을 반영해 기본 점수를 업데이트했습니다.`;
+  const latestNote = getLatestRevaluationNote(company);
   const riskTone = scores.companyRisk >= 55 ? "리스크가 높은 편이라 점수 상승에도 확신도는 제한됩니다." : "리스크가 통제 가능한 수준이라 펀더멘탈 점수의 설명력이 높습니다.";
   const rateTone = scores.rateSensitivity < 50 ? "현재 금리 레벨은 밸류에이션에 부담입니다." : "현재 금리 환경은 비즈니스 모델에 중립 이상으로 작용합니다.";
   const policyTone = scores.policyImpact < 55 ? "정책 변수는 단기 불확실성으로 남아 있습니다." : "정책 환경은 상대적으로 우호적이거나 관리 가능한 수준입니다.";
@@ -2127,7 +2199,7 @@ function renderMemo(company, scores, composite) {
     ["Composite 결론", `종합 ${composite}점은 회사 자체 ${companyPartScore(scores)}점, 외부 환경 ${externalPartScore(scores)}점을 합산한 결과입니다. ${narrative.conflict}`],
     ["점수 상승 근거", narrative.positives.join(" ")],
     ["점수 하락 근거", narrative.negatives.join(" ")],
-    ["최신 재평가", `${latestNote} ${riskTone}`],
+    ["최신 재평가", `${escapeHtml(latestNote).replaceAll("\\n", "<br />")} ${escapeHtml(riskTone)}`],
     ["매크로·섹터 판단", `매크로 레짐 ${scores.macroRegime}, 금리 민감도 ${scores.rateSensitivity}, 섹터 모멘텀 ${scores.sectorMomentum}, 사이클 적합도 ${scores.cycleFit}입니다. Hot CPI와 유가 상승 때문에 ${rateTone} ${sectorTone}`],
     ["정책 요인", `정책 영향 점수는 ${scores.policyImpact}입니다. ${policyTone}`],
   ];
@@ -2262,6 +2334,7 @@ function render() {
   }
 
   const company = getCompany();
+  ensureRevaluation(company);
   const scores = companyScores(company);
   const composite = calculateComposite(scores);
   const baseComposite = calculateComposite(company.scores);
@@ -2276,7 +2349,9 @@ function render() {
   document.querySelector("#scoreDelta").style.color = delta >= 0 ? "var(--green)" : "var(--red)";
   renderCompositeSummary(company, scores, composite);
   document.querySelector("#compositeMeter").style.width = `${composite}%`;
-  document.querySelector("#lastUpdated").textContent = `Updated ${new Date().toISOString().slice(0, 10)}`;
+  const apiReval = getCachedRevaluation(company.ticker);
+  const updatedAt = (apiReval && apiReval.asOf) || new Date().toISOString().slice(0, 10);
+  document.querySelector("#lastUpdated").textContent = `Updated ${updatedAt}`;
   const revaluationDone = Boolean(revision?.applied?.companyGuidance && revision?.applied?.macroRates);
   revaluationButton.disabled = revaluationDone;
   document.querySelector("#timelinePopover").classList.remove("open");

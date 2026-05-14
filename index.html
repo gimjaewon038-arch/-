@@ -36,7 +36,7 @@
 
         <div class="source-card">
           <span class="eyebrow">Data Stack</span>
-          <p>2026-05-13 기준: Google News, Yahoo Finance, BLS CPI, 기업 실적·공시, ETF proxy를 결합해 재평가합니다.</p>
+          <p id="dataStackNote">데이터 로딩 중: Google News, Yahoo Finance, FRED/BLS, 기업 실적·공시, ETF proxy를 결합해 재평가합니다.</p>
         </div>
       </aside>
 
@@ -77,7 +77,7 @@
                   <span class="eyebrow">Today Revaluation</span>
                   <h2>오늘의 시장 재평가 요약</h2>
                 </div>
-                <span class="pill">2026-05-13</span>
+                <span id="marketBriefAsOf" class="pill"></span>
               </div>
               <div id="marketBrief" class="brief-grid"></div>
             </article>
@@ -121,7 +121,7 @@
                   <span class="eyebrow">Daily Money Flow</span>
                   <h2>오늘 자금 이동 추정</h2>
                 </div>
-                <span class="pill">ETF proxy · May 13</span>
+                <span id="flowAsOf" class="pill"></span>
               </div>
               <div id="moneyFlow" class="money-flow"></div>
             </article>
