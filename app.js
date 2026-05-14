@@ -143,6 +143,14 @@ const companies = [
     sensitivity: { duration: 0.98, cyclical: 0.5, policy: 0.67, dollar: 0.18 },
     scores: { growth: 74, profitability: 17, fundamentals: 35, guidance: 56, companyRisk: 86, macroRegime: 36, rateSensitivity: 18, policyImpact: 54, sectorMomentum: 55, cycleFit: 39 },
   },
+  {
+    ticker: "SES",
+    name: "SES AI",
+    sector: "Battery Technology",
+    profile: "AI 기반 리튬메탈 배터리 개발과 자동차 OEM 협력, 장기 상용화 일정, 자금조달 환경에 민감한 초기 성장주",
+    sensitivity: { duration: 0.96, cyclical: 0.62, policy: 0.7, dollar: 0.18 },
+    scores: { growth: 70, profitability: 16, fundamentals: 34, guidance: 52, companyRisk: 88, macroRegime: 36, rateSensitivity: 18, policyImpact: 58, sectorMomentum: 44, cycleFit: 38 },
+  },
 ];
 
 let macroState = {
@@ -663,6 +671,7 @@ const koreanTickerAliases = {
   APP: ["앱러빈", "앱로빈", "애드테크", "광고"],
   TMDX: ["트랜스메딕스", "트랜스 메딕스", "장기이식", "메드테크"],
   IONQ: ["아이온큐", "이온큐", "양자컴퓨팅", "양자"],
+  SES: ["SES AI", "ses ai", "에스이에스", "에스이에스에이아이", "리튬메탈", "배터리"],
   MSFT: ["마이크로소프트", "마소", "윈도우", "애저"],
   AMZN: ["아마존", "AWS", "이커머스", "클라우드"],
   GOOGL: ["알파벳", "구글", "유튜브", "검색"],
@@ -1097,6 +1106,10 @@ function koreanAliasesForCompany(company) {
   return [...new Set([...direct, ...sectorAliases, ...indexAliases])];
 }
 
+function companyIdentityText(company) {
+  return [company.ticker, company.name, ...koreanAliasesForCompany(company)].join(" ");
+}
+
 function companySearchText(company) {
   return [
     company.ticker,
@@ -1109,11 +1122,49 @@ function companySearchText(company) {
   ].join(" ");
 }
 
+function searchTokens(query) {
+  return String(query || "")
+    .normalize("NFKC")
+    .toLowerCase()
+    .split(/[\s._·\-&/]+/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+}
+
 function matchesCompanySearch(company, query) {
   const rawQuery = String(query || "").trim().toLowerCase();
   if (!rawQuery) return true;
+  const normalizedQuery = normalizeSearchText(rawQuery);
+  const identity = companyIdentityText(company).toLowerCase();
+  const normalizedIdentity = normalizeSearchText(identity);
+  const tokens = searchTokens(rawQuery).map(normalizeSearchText).filter(Boolean);
+  if (identity.includes(rawQuery) || normalizedIdentity.includes(normalizedQuery)) return true;
+  if (tokens.length > 1) {
+    return tokens.every((token) => normalizedIdentity.includes(token));
+  }
   const text = companySearchText(company).toLowerCase();
-  return text.includes(rawQuery) || normalizeSearchText(text).includes(normalizeSearchText(rawQuery));
+  return text.includes(rawQuery) || normalizeSearchText(text).includes(normalizedQuery);
+}
+
+function searchRelevance(company, query) {
+  const rawQuery = String(query || "").trim().toLowerCase();
+  if (!rawQuery) return 0;
+  const normalizedQuery = normalizeSearchText(rawQuery);
+  const ticker = normalizeSearchText(company.ticker);
+  const name = normalizeSearchText(company.name);
+  const identity = normalizeSearchText(companyIdentityText(company));
+  const fullText = normalizeSearchText(companySearchText(company));
+  const tokens = searchTokens(rawQuery).map(normalizeSearchText).filter(Boolean);
+
+  if (ticker === normalizedQuery) return 1000;
+  if (name === normalizedQuery) return 950;
+  if (identity === normalizedQuery) return 930;
+  if (name.startsWith(normalizedQuery)) return 900;
+  if (identity.includes(normalizedQuery)) return 850;
+  if (tokens.length > 1 && tokens.every((token) => identity.includes(token))) return 800;
+  if (ticker.startsWith(normalizedQuery)) return 760;
+  if (fullText.includes(normalizedQuery)) return 300;
+  return 0;
 }
 
 function selectCompany(ticker) {
@@ -1158,8 +1209,8 @@ function renderHomeSearch() {
       const filterMatches = query ? true : companyMatchesFilter(company, activeHomeFilter);
       return filterMatches && homeSearchMatches(company, query);
     })
-    .map((company) => ({ company, score: calculateComposite(companyScores(company)) }))
-    .sort((a, b) => b.score - a.score)
+    .map((company) => ({ company, score: calculateComposite(companyScores(company)), relevance: searchRelevance(company, query) }))
+    .sort((a, b) => b.relevance - a.relevance || b.score - a.score)
     .slice(0, 9);
 
   if (!matches.length) {
@@ -1202,6 +1253,7 @@ function renderCompanyList() {
 
   companies
     .filter((company) => matchesCompanySearch(company, query))
+    .sort((a, b) => searchRelevance(b, query) - searchRelevance(a, query) || a.ticker.localeCompare(b.ticker))
     .forEach((company) => {
       const button = document.createElement("button");
       button.className = `company-item ${company.ticker === selectedTicker ? "active" : ""}`;
