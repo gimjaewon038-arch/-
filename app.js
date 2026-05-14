@@ -183,67 +183,96 @@ function writeStoredJson(key, value) {
 }
 
 let macroState = {
-  fedFunds: { label: "Fed Funds", value: "N/A", trend: "데이터 로딩", interpretation: "정책금리 변화는 성장주 할인율과 금융주 NIM에 영향을 줍니다." },
-  tenYear: { label: "10Y Treasury", value: "N/A", trend: "데이터 로딩", interpretation: "장기금리 변화는 장기 성장주 밸류에이션 민감도를 키웁니다." },
-  cpi: { label: "CPI", value: "N/A", trend: "데이터 로딩", interpretation: "물가가 끈적하면 금리 인하 기대가 늦어져 성장주에 부담이 될 수 있습니다." },
-  ism: { label: "Cycle/Oil", value: "N/A", trend: "데이터 로딩", interpretation: "유가/경기 민감 변수는 섹터 로테이션과 마진에 영향을 줍니다." },
+  fedFunds: { label: "Fed Funds", value: "3.50-3.75%", trend: "2026-05-13 기준 유지", interpretation: "정책금리 동결 장기화는 성장주 할인율에는 부담, 은행 NIM에는 일부 방어 요인입니다." },
+  tenYear: { label: "10Y Treasury", value: "4.45%", trend: "2026-05-13 기준 유지", interpretation: "장기금리 재상승은 AI·소프트웨어·소형 성장주의 밸류에이션 부담을 키웁니다." },
+  cpi: { label: "CPI", value: "3.8%", trend: "2026-05-13 기준 유지", interpretation: "물가가 예상보다 끈적하면 금리 인하 기대가 늦어져 성장주에는 부담, 에너지와 방어주는 상대적으로 유리합니다." },
+  ism: { label: "Cycle/Oil", value: "WTI ~$100", trend: "2026-05-13 기준 유지", interpretation: "유가 강세는 에너지에는 우호적이지만 소비재·운송·마진 민감 업종에는 부담입니다." },
 };
 
 const defaultMacroReports = [
   {
     name: "CPI",
-    date: "로딩 중",
-    value: "N/A",
-    previous: "N/A",
-    consensus: "N/A",
-    tone: "mixed",
-    verdict: "최신 보고서 확인 중",
-    reason: "최신 CPI 데이터는 /api/dashboard에서 불러옵니다. 새 데이터가 없으면 마지막으로 저장된 실제 보고서를 유지합니다.",
+    date: "2026-05-13",
+    value: "3.8%",
+    previous: "3.5%",
+    consensus: "3.6%",
+    tone: "negative",
+    verdict: "시장에 부정적",
+    reason: "전날 기준 CPI가 예상치 3.6%와 이전치 3.5%를 웃돌아 금리 인하 기대를 늦추는 요인으로 유지합니다. 새 발표가 없으면 이 데이터를 그대로 둡니다.",
   },
   {
     name: "Core CPI",
-    date: "로딩 중",
-    value: "N/A",
-    previous: "N/A",
-    consensus: "N/A",
-    tone: "mixed",
-    verdict: "최신 보고서 확인 중",
-    reason: "최신 Core CPI 데이터는 /api/dashboard에서 불러옵니다. 새 데이터가 없으면 마지막으로 저장된 실제 보고서를 유지합니다.",
+    date: "2026-05-13",
+    value: "3.2%",
+    previous: "3.1%",
+    consensus: "3.1%",
+    tone: "negative",
+    verdict: "성장주에 부담",
+    reason: "근원 물가가 예상보다 높아 고PER 성장주와 장기 현금흐름 자산의 할인율 부담을 키우는 전날 판단을 유지합니다.",
   },
   {
     name: "PPI",
-    date: "로딩 중",
-    value: "N/A",
-    previous: "N/A",
-    consensus: "N/A",
-    tone: "mixed",
-    verdict: "최신 보고서 확인 중",
-    reason: "최신 PPI 데이터는 /api/dashboard에서 불러옵니다. 새 데이터가 없으면 마지막으로 저장된 실제 보고서를 유지합니다.",
+    date: "2026-05-13",
+    value: "2.9%",
+    previous: "2.6%",
+    consensus: "2.7%",
+    tone: "negative",
+    verdict: "마진에 부담",
+    reason: "생산자물가 상승은 원가와 마진 압박으로 이어질 수 있어 가격 전가력이 약한 소비재·산업재에는 부담이라는 전날 판단을 유지합니다.",
   },
   {
     name: "Nonfarm Payrolls",
-    date: "로딩 중",
-    value: "N/A",
-    previous: "N/A",
-    consensus: "N/A",
+    date: "2026-05-13",
+    value: "214K",
+    previous: "188K",
+    consensus: "175K",
     tone: "mixed",
-    verdict: "최신 보고서 확인 중",
-    reason: "최신 고용 데이터는 /api/dashboard에서 불러옵니다. 새 데이터가 없으면 마지막으로 저장된 실제 보고서를 유지합니다.",
+    verdict: "해석 엇갈림",
+    reason: "강한 고용은 침체 우려를 낮추지만 임금·서비스 물가 압력을 남깁니다. 경기민감주는 일부 우호, 금리민감 성장주는 부담이라는 전날 판단을 유지합니다.",
   },
   {
     name: "FOMC",
-    date: "로딩 중",
-    value: "N/A",
-    previous: "N/A",
-    consensus: "N/A",
+    date: "2026-05-13",
+    value: "3.50-3.75%",
+    previous: "3.50-3.75%",
+    consensus: "동결",
     tone: "mixed",
-    verdict: "최신 보고서 확인 중",
-    reason: "최신 정책금리 데이터는 /api/dashboard에서 불러옵니다. 새 데이터가 없으면 마지막으로 저장된 실제 보고서를 유지합니다.",
+    verdict: "동결 장기화",
+    reason: "동결 자체는 예상과 같지만 물가 재상승으로 인하 시점이 늦어질 수 있어 은행에는 일부 방어적, 장기 성장주에는 부담이라는 전날 판단을 유지합니다.",
   },
 ];
 
-let macroReports = readStoredJson("hojae.macroReports", defaultMacroReports);
-let marketNewsCache = readStoredJson("hojae.marketNews", []);
+const defaultMarketNews = [
+  {
+    title: "Hot inflation data keeps pressure on rate-sensitive growth stocks",
+    titleKo: "물가 재가열로 금리민감 성장주 부담 지속",
+    source: "전일 시장 요약",
+    published: "2026-05-13",
+    url: "#",
+    image: "",
+  },
+  {
+    title: "Energy remains relatively strong as oil shock supports sector rotation",
+    titleKo: "유가 충격 속 에너지 섹터 상대 강세 유지",
+    source: "전일 시장 요약",
+    published: "2026-05-13",
+    url: "#",
+    image: "",
+  },
+  {
+    title: "AI earnings leadership offsets some macro pressure in mega-cap technology",
+    titleKo: "AI 실적 기대가 대형 기술주의 매크로 부담 일부 상쇄",
+    source: "전일 시장 요약",
+    published: "2026-05-13",
+    url: "#",
+    image: "",
+  },
+];
+
+const storedMacroReports = readStoredJson("hojae.macroReports", null);
+let macroReports = hasUsableMacroReports(storedMacroReports) ? storedMacroReports : defaultMacroReports;
+const storedMarketNews = readStoredJson("hojae.marketNews", null);
+let marketNewsCache = hasUsableMarketNews(storedMarketNews) ? storedMarketNews : defaultMarketNews;
 
 const nasdaq100Constituents = [
   ["AAPL", "Apple", "Technology Hardware"],
@@ -1435,6 +1464,19 @@ function hasUsableMacroReports(items) {
   return Array.isArray(items) && items.some((item) => item && item.value && item.value !== "N/A" && item.value !== "확인 중");
 }
 
+function hasUsableMarketNews(items) {
+  return (
+    Array.isArray(items) &&
+    items.some(
+      (item) =>
+        item &&
+        (item.titleKo || item.title) &&
+        item.published !== "기존 뉴스" &&
+        item.source !== "호재야호재",
+    )
+  );
+}
+
 function renderMarketBrief() {
   const grid = document.querySelector("#marketBrief");
   if (!grid) return;
@@ -1964,7 +2006,7 @@ async function renderMarketNews() {
   try {
     const news = await fetchNews(null, "market");
     const items = news.items || [];
-    if (items.length) {
+    if (hasUsableMarketNews(items)) {
       marketNewsCache = items;
       writeStoredJson("hojae.marketNews", marketNewsCache);
     }
