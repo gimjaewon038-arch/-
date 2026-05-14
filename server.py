@@ -148,10 +148,11 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
     def handle_universe(self):
         global UNIVERSE_CACHE
         if UNIVERSE_CACHE is None:
+            nasdaq = fetch_nasdaq_listed_universe()
             sp500 = fetch_sp500_universe()
             russell = fetch_russell2000_universe()
             merged = {}
-            for item in [*sp500, *russell]:
+            for item in [*nasdaq, *sp500, *russell]:
                 ticker = item["ticker"]
                 if ticker not in merged:
                     merged[ticker] = item
@@ -159,7 +160,7 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
                     indexes = set(merged[ticker]["indexes"])
                     indexes.update(item["indexes"])
                     merged[ticker]["indexes"] = sorted(indexes)
-                    if not merged[ticker].get("sector") and item.get("sector"):
+                    if item.get("sector") and merged[ticker].get("sector") in ("", "Unknown", "Nasdaq Listed"):
                         merged[ticker]["sector"] = item["sector"]
                     if not merged[ticker].get("industry") and item.get("industry"):
                         merged[ticker]["industry"] = item["industry"]
@@ -213,6 +214,7 @@ FLOW_SYMBOLS = [
 
 SP500_URL = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 IWM_HOLDINGS_URL = "https://www.ishares.com/us/products/239710/ishares-russell-2000-etf/1467271812596.ajax?fileType=csv&fileName=IWM_holdings&dataType=fund"
+NASDAQ_LISTED_URL = "https://www.nasdaqtrader.com/dynamic/SymDir/nasdaqlisted.txt"
 
 BANK_PRICE_TARGETS = {
     "AAPL": [
@@ -646,6 +648,89 @@ def fetch_russell2000_universe():
         return items
     except Exception:
         return []
+
+
+def fetch_nasdaq_listed_universe():
+    try:
+        body = fetch_text(NASDAQ_LISTED_URL, timeout=10)
+        items = []
+        for line in body.splitlines():
+            if not line or line.startswith("Symbol|") or line.startswith("File Creation Time"):
+                continue
+            parts = line.split("|")
+            if len(parts) < 8:
+                continue
+            symbol, security_name, market_category, test_issue, financial_status, round_lot, etf, next_shares = parts[:8]
+            ticker = normalize_ticker(symbol)
+            name = clean_nasdaq_security_name(security_name)
+            if not ticker or not name:
+                continue
+            if test_issue.upper() == "Y" or etf.upper() == "Y" or next_shares.upper() == "Y":
+                continue
+            if is_non_common_nasdaq_security(security_name):
+                continue
+            items.append(
+                {
+                    "ticker": ticker,
+                    "name": name,
+                    "sector": infer_nasdaq_sector(name),
+                    "industry": "",
+                    "indexes": ["Nasdaq Listed"],
+                    "exchange": "Nasdaq",
+                    "marketCategory": market_category,
+                    "financialStatus": financial_status,
+                    "roundLotSize": clean_csv_value(round_lot),
+                }
+            )
+        return items
+    except Exception:
+        return []
+
+
+def clean_nasdaq_security_name(value):
+    name = clean_csv_value(value)
+    name = re.sub(r"\s*-\s*(Common Stock|Ordinary Shares|Class [A-Z] Common Stock|Class [A-Z] Ordinary Shares|American Depositary Shares|ADS|ADR).*", "", name, flags=re.IGNORECASE)
+    name = re.sub(r"\s*\(.*?\)\s*$", "", name).strip()
+    return titleize_name(name.upper()) if name.isupper() else name
+
+
+def is_non_common_nasdaq_security(value):
+    name = clean_csv_value(value).lower()
+    blocked = [
+        " warrant",
+        " right",
+        " unit",
+        " preferred",
+        " preference",
+        " notes due",
+        " senior note",
+        " debenture",
+        " bond",
+        "contingent value right",
+    ]
+    return any(token in name for token in blocked)
+
+
+def infer_nasdaq_sector(name):
+    value = clean_csv_value(name).lower()
+    rules = [
+        (("therapeutics", "pharma", "bio", "medical", "health", "oncology", "genetic", "clinic"), "Health Care"),
+        (("semiconductor", "chip", "micro", "silicon"), "Information Technology"),
+        (("software", "cloud", "data", "cyber", "digital", "technology", "systems", "ai"), "Information Technology"),
+        (("bank", "bancorp", "financial", "capital", "insurance", "trust"), "Financials"),
+        (("energy", "oil", "gas", "solar", "power", "renewable"), "Energy"),
+        (("restaurant", "retail", "brands", "apparel", "travel", "hotel", "auto"), "Consumer Discretionary"),
+        (("food", "beverage", "grocery", "consumer"), "Consumer Staples"),
+        (("industrial", "aerospace", "manufacturing", "machinery", "logistics"), "Industrials"),
+        (("media", "communications", "telecom", "entertainment", "streaming"), "Communication Services"),
+        (("reit", "realty", "property", "properties"), "Real Estate"),
+        (("materials", "mining", "metals", "chemical"), "Materials"),
+        (("utility", "water", "electric"), "Utilities"),
+    ]
+    for needles, sector in rules:
+        if any(needle in value for needle in needles):
+            return sector
+    return "Nasdaq Listed"
 
 
 def clean_html(value):

@@ -328,6 +328,15 @@ const sectorDefaults = {
   "Telecom": { duration: 0.3, cyclical: 0.28, policy: 0.48, dollar: 0.08 },
   "Energy": { duration: -0.08, cyclical: 0.64, policy: 0.73, dollar: 0.41 },
   "Energy Services": { duration: 0.08, cyclical: 0.72, policy: 0.66, dollar: 0.38 },
+  "Information Technology": { duration: 0.72, cyclical: 0.5, policy: 0.38, dollar: 0.3 },
+  "Health Care": { duration: 0.56, cyclical: 0.24, policy: 0.68, dollar: 0.12 },
+  "Financials": { duration: -0.05, cyclical: 0.66, policy: 0.64, dollar: 0.12 },
+  "Consumer Discretionary": { duration: 0.5, cyclical: 0.68, policy: 0.24, dollar: 0.18 },
+  "Industrials": { duration: 0.36, cyclical: 0.68, policy: 0.34, dollar: 0.26 },
+  "Communication Services": { duration: 0.55, cyclical: 0.52, policy: 0.42, dollar: 0.18 },
+  "Real Estate": { duration: 0.18, cyclical: 0.46, policy: 0.36, dollar: 0.08 },
+  "Materials": { duration: 0.22, cyclical: 0.72, policy: 0.34, dollar: 0.42 },
+  "Nasdaq Listed": { duration: 0.64, cyclical: 0.48, policy: 0.36, dollar: 0.22 },
 };
 
 function hashTicker(ticker) {
@@ -341,9 +350,9 @@ function defaultSensitivity(sector) {
 function defaultScores(ticker, sector) {
   const seed = hashTicker(ticker);
   const isGrowth =
-    /Software|Cloud|AI|Internet|E-Commerce|Cybersecurity|Biotechnology|Semiconductors|Medical|Gaming|Fintech/.test(sector);
-  const isDefensive = /Utilities|Consumer Staples|Telecom|Retail/.test(sector);
-  const isCyclical = /Energy|Industrial|Travel|Lodging|Restaurants|Auto|Logistics|Advertising|Media/.test(sector);
+    /Information Technology|Software|Cloud|AI|Internet|E-Commerce|Cybersecurity|Biotechnology|Semiconductors|Medical|Gaming|Fintech/.test(sector);
+  const isDefensive = /Utilities|Consumer Staples|Telecom|Retail|Health Care/.test(sector);
+  const isCyclical = /Energy|Industrial|Industrials|Materials|Consumer Discretionary|Travel|Lodging|Restaurants|Auto|Logistics|Advertising|Media/.test(sector);
   return {
     growth: clamp(58 + (seed % 18) + (isGrowth ? 10 : 0) - (isDefensive ? 4 : 0)),
     profitability: clamp(55 + ((seed * 3) % 22) + (isDefensive ? 7 : 0)),
@@ -458,8 +467,16 @@ const companyProfileOverrides = {
 
 function buildUniverseProfile({ ticker, name, sector, industry, indexes }) {
   if (companyProfileOverrides[ticker]) return companyProfileOverrides[ticker];
-  const indexText = indexes?.length ? `${indexes.join(", ")} 편입 종목` : "미국 상장사";
-  const industryText = industry ? `${sector} 섹터의 ${industry} 산업` : `${sector} 섹터`;
+  const indexText = indexes?.includes("Nasdaq Listed")
+    ? `나스닥 상장${indexes.length > 1 ? ` 및 ${indexes.filter((index) => index !== "Nasdaq Listed").join(", ")} 편입` : ""} 종목`
+    : indexes?.length
+      ? `${indexes.join(", ")} 편입 종목`
+      : "미국 상장사";
+  const industryText = industry
+    ? `${sector} 섹터의 ${industry} 산업`
+    : sector === "Nasdaq Listed"
+      ? "상세 산업 분류 확인 전 기본 나스닥 유니버스"
+      : `${sector} 섹터`;
   return `${name}은 ${indexText}으로, ${industryText}에서 사업을 영위합니다. 매출 성장, 마진 추세, 밸류에이션, 정책·금리·경기 사이클 변화가 상세 재평가의 핵심 변수입니다.`;
 }
 
