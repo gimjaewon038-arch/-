@@ -145,14 +145,14 @@ const companies = [
   },
 ];
 
-const macroState = {
+let macroState = {
   fedFunds: { label: "Fed Funds", value: "3.50-3.75%", trend: "동결 장기화", interpretation: "인하 기대가 뒤로 밀리며 고PER 성장주에는 부담, 은행 순이자마진에는 일부 방어 요인" },
   tenYear: { label: "10Y Treasury", value: "4.45%", trend: "상승 압력", interpretation: "장기금리 재상승은 AI·소프트웨어·소형 성장주의 할인율 부담을 키움" },
   cpi: { label: "CPI", value: "3.8%", trend: "예상 상회", interpretation: "에너지·주거비가 물가 부담을 키워 단기 위험선호를 낮추고 방어/에너지 선호를 강화" },
   ism: { label: "Cycle/Oil", value: "WTI ~$100", trend: "유가 충격", interpretation: "에너지 섹터에는 우호적이지만 소비재와 운송·성장주 마진에는 부담" },
 };
 
-const macroReports = [
+let macroReports = [
   {
     name: "CPI",
     date: "2026-05-12",
@@ -522,7 +522,9 @@ async function loadUniverse() {
   }
 }
 
-const sectors = [
+let sectorSummary = "섹터 상대강도 데이터를 계산 중입니다.";
+
+let sectors = [
   { etf: "XLK", name: "Technology", relative: 70, rate: "High", cycle: "AI earnings leadership, short-term CPI/yield pressure" },
   { etf: "XLF", name: "Financials", relative: 56, rate: "Mixed", cycle: "NII support offset by credit and policy uncertainty" },
   { etf: "XLE", name: "Energy", relative: 84, rate: "Low", cycle: "Oil shock and inflation hedge leadership" },
@@ -615,7 +617,7 @@ const scoringNarratives = {
   },
 };
 
-const marketBriefCards = [
+let marketBriefCards = [
   {
     label: "시장 레짐",
     value: "인플레 재가열",
@@ -640,6 +642,78 @@ const marketBriefCards = [
     tone: "mixed",
     text: "AAPL·OSCR·XOM은 상향 요인이 컸고, HIMS·TSLA·IONQ는 가이던스와 외부 환경 부담을 더 크게 반영했습니다.",
   },
+];
+
+const koreanTickerAliases = {
+  AAPL: ["애플", "아이폰", "맥", "서비스"],
+  NVDA: ["엔비디아", "앤비디아", "인비디아", "지포스", "ai칩", "인공지능 반도체"],
+  TSLA: ["테슬라", "전기차", "일론", "머스크", "로보택시"],
+  JPM: ["제이피모건", "JP모건", "제이피 모건", "은행", "대형은행"],
+  XOM: ["엑슨모빌", "엑손모빌", "정유", "석유", "에너지"],
+  HIMS: ["힘스앤허스", "힘스 앤 허스", "힘스", "허스", "원격진료", "디지털 헬스"],
+  OSCR: ["오스카헬스", "오스카 헬스", "오스카", "건강보험", "의료보험"],
+  SOFI: ["소파이", "소파이 테크놀로지", "핀테크", "대출"],
+  HOOD: ["로빈후드", "로빈 후드", "증권앱", "브로커리지"],
+  RKLB: ["로켓랩", "로켓 랩", "우주", "발사체"],
+  RDDT: ["레딧", "커뮤니티", "소셜"],
+  DUOL: ["듀오링고", "교육", "언어학습"],
+  PLTR: ["팔란티어", "팰런티어", "AI소프트웨어", "국방소프트웨어"],
+  CRWD: ["크라우드스트라이크", "크라우드 스트라이크", "사이버보안", "보안"],
+  NET: ["클라우드플레어", "클라우드 플레어", "클라우드", "엣지"],
+  APP: ["앱러빈", "앱로빈", "애드테크", "광고"],
+  TMDX: ["트랜스메딕스", "트랜스 메딕스", "장기이식", "메드테크"],
+  IONQ: ["아이온큐", "이온큐", "양자컴퓨팅", "양자"],
+  MSFT: ["마이크로소프트", "마소", "윈도우", "애저"],
+  AMZN: ["아마존", "AWS", "이커머스", "클라우드"],
+  GOOGL: ["알파벳", "구글", "유튜브", "검색"],
+  GOOG: ["알파벳", "구글", "유튜브", "검색"],
+  META: ["메타", "페이스북", "인스타그램", "릴스"],
+  AMD: ["AMD", "에이엠디", "반도체", "라이젠"],
+  AVGO: ["브로드컴", "반도체", "네트워크칩"],
+  ASML: ["ASML", "에이에스엠엘", "노광장비", "반도체장비"],
+  ARM: ["ARM", "암홀딩스", "암 홀딩스", "반도체IP"],
+  INTC: ["인텔", "반도체"],
+  COST: ["코스트코", "소비재", "창고형 할인점"],
+  NFLX: ["넷플릭스", "스트리밍", "OTT"],
+  ADBE: ["어도비", "크리에이티브", "소프트웨어"],
+  CRM: ["세일즈포스", "CRM", "소프트웨어"],
+  ORCL: ["오라클", "데이터베이스", "클라우드"],
+  BAC: ["뱅크오브아메리카", "뱅크 오브 아메리카", "미국은행"],
+  WFC: ["웰스파고", "은행"],
+  GS: ["골드만삭스", "투자은행"],
+  MS: ["모건스탠리", "모건 스탠리", "투자은행"],
+  UNH: ["유나이티드헬스", "유나이티드 헬스", "건강보험"],
+  LLY: ["일라이릴리", "일라이 릴리", "비만치료제", "제약"],
+  NVO: ["노보노디스크", "노보 노디스크", "비만치료제", "제약"],
+  PFE: ["화이자", "제약"],
+  MRK: ["머크", "제약"],
+  DIS: ["디즈니", "미디어", "스트리밍"],
+  UBER: ["우버", "승차공유", "배달"],
+  ABNB: ["에어비앤비", "숙박", "여행"],
+  SHOP: ["쇼피파이", "이커머스"],
+  COIN: ["코인베이스", "암호화폐", "가상자산"],
+  MSTR: ["마이크로스트래티지", "비트코인"],
+};
+
+const koreanSectorAliases = [
+  { terms: ["semiconductor", "chip", "반도체"], aliases: ["반도체", "칩", "AI칩", "반도체 장비", "파운드리"] },
+  { terms: ["software", "cloud", "internet", "technology", "information technology"], aliases: ["기술주", "테크", "소프트웨어", "클라우드", "인터넷", "성장주"] },
+  { terms: ["cybersecurity", "security"], aliases: ["사이버보안", "보안", "제로트러스트"] },
+  { terms: ["financial", "fintech", "insurance"], aliases: ["금융", "핀테크", "보험", "증권"] },
+  { terms: ["bank", "banking"], aliases: ["은행"] },
+  { terms: ["energy", "oil", "gas"], aliases: ["에너지", "석유", "원유", "가스", "정유"] },
+  { terms: ["health", "medical", "biotechnology", "pharmaceutical", "managed care"], aliases: ["헬스케어", "의료", "바이오", "제약", "건강보험", "의료기기"] },
+  { terms: ["consumer discretionary", "retail", "e-commerce", "travel", "restaurant"], aliases: ["소비재", "임의소비재", "리테일", "전자상거래", "여행", "외식"] },
+  { terms: ["consumer staples", "food", "beverage"], aliases: ["필수소비재", "식품", "음료", "방어주"] },
+  { terms: ["utilities", "electric", "power"], aliases: ["유틸리티", "전력", "전기", "방어주"] },
+  { terms: ["industrial", "aerospace", "defense", "railroad"], aliases: ["산업재", "항공우주", "방산", "철도"] },
+  { terms: ["communication", "media", "streaming", "advertising"], aliases: ["커뮤니케이션", "미디어", "스트리밍", "광고"] },
+  { terms: ["real estate", "reit"], aliases: ["부동산", "리츠"] },
+  { terms: ["materials", "chemical", "mining"], aliases: ["소재", "화학", "광산", "원자재"] },
+  { terms: ["auto", "automobile"], aliases: ["자동차"] },
+  { terms: ["electric vehicle"], aliases: ["전기차", "EV"] },
+  { terms: ["quantum"], aliases: ["양자", "양자컴퓨팅"] },
+  { terms: ["space"], aliases: ["우주", "발사체"] },
 ];
 
 const eventTemplates = {
@@ -972,6 +1046,44 @@ function factorDetail(key, company, scores) {
   };
 }
 
+function normalizeSearchText(value) {
+  return String(value || "").toLowerCase().replace(/\s+/g, "");
+}
+
+function koreanAliasesForCompany(company) {
+  const direct = koreanTickerAliases[company.ticker] || [];
+  const haystack = `${company.sector || ""} ${company.industry || ""} ${company.profile || ""}`.toLowerCase();
+  const sectorAliases = koreanSectorAliases.flatMap((group) =>
+    group.terms.some((term) => haystack.includes(term.toLowerCase())) ? group.aliases : [],
+  );
+  const indexAliases = (company.indexes || []).flatMap((index) => {
+    if (index.includes("Nasdaq")) return ["나스닥", "나스닥100", "나스닥 100"];
+    if (index.includes("S&P")) return ["에스앤피", "S&P500", "에스앤피500", "대형주"];
+    if (index.includes("Russell")) return ["러셀", "러셀2000", "러셀 2000", "소형주"];
+    return [];
+  });
+  return [...new Set([...direct, ...sectorAliases, ...indexAliases])];
+}
+
+function companySearchText(company) {
+  return [
+    company.ticker,
+    company.name,
+    company.sector,
+    company.industry,
+    company.profile,
+    ...(company.indexes || []),
+    ...koreanAliasesForCompany(company),
+  ].join(" ");
+}
+
+function matchesCompanySearch(company, query) {
+  const rawQuery = String(query || "").trim().toLowerCase();
+  if (!rawQuery) return true;
+  const text = companySearchText(company).toLowerCase();
+  return text.includes(rawQuery) || normalizeSearchText(text).includes(normalizeSearchText(rawQuery));
+}
+
 function selectCompany(ticker) {
   selectedTicker = ticker;
   currentPage = "detail";
@@ -984,13 +1096,12 @@ function selectCompany(ticker) {
 function companyMatchesFilter(company, filterKey) {
   const filter = homeFilters.find((item) => item.key === filterKey);
   if (!filter || filter.key === "all") return true;
-  const haystack = `${company.ticker} ${company.name} ${company.sector} ${company.profile || ""} ${company.industry || ""}`.toLowerCase();
+  const haystack = companySearchText(company).toLowerCase();
   return filter.terms.some((term) => haystack.includes(term));
 }
 
 function homeSearchMatches(company, query) {
-  if (!query) return true;
-  return `${company.ticker} ${company.name} ${company.sector} ${company.profile || ""} ${company.industry || ""}`.toLowerCase().includes(query);
+  return matchesCompanySearch(company, query);
 }
 
 function renderHomeSearch() {
@@ -1036,7 +1147,7 @@ function renderHomeSearch() {
 }
 
 function renderCompanyList() {
-  const query = document.querySelector("#companySearch").value.trim().toLowerCase();
+  const query = document.querySelector("#companySearch").value;
   const list = document.querySelector("#companyList");
   list.innerHTML = "";
   if (!universeLoaded) {
@@ -1047,7 +1158,7 @@ function renderCompanyList() {
   }
 
   companies
-    .filter((company) => `${company.ticker} ${company.name} ${company.sector}`.toLowerCase().includes(query))
+    .filter((company) => matchesCompanySearch(company, query))
     .forEach((company) => {
       const button = document.createElement("button");
       button.className = `company-item ${company.ticker === selectedTicker ? "active" : ""}`;
@@ -1720,7 +1831,7 @@ async function renderLatestNews(company) {
 function renderSectorChart() {
   const chart = document.querySelector("#sectorChart");
   chart.innerHTML = `
-    <p class="flow-summary">2026-05-13 기준 섹터 순환: 에너지와 AI·사이버보안은 강세, EV·고성장·디지털 헬스는 금리와 비용 부담으로 약세입니다.</p>
+    <p class="flow-summary">${escapeHtml(sectorSummary)}</p>
   `;
   [...sectors]
     .sort((a, b) => b.relative - a.relative)
@@ -1738,6 +1849,26 @@ function renderSectorChart() {
     `;
       chart.appendChild(row);
     });
+}
+
+async function loadDashboard() {
+  try {
+    const response = await fetch("/api/dashboard");
+    if (!response.ok) return;
+    const data = await response.json();
+    if (data && data.macroState) macroState = data.macroState;
+    if (data && Array.isArray(data.macroReports)) macroReports = data.macroReports;
+    if (data && Array.isArray(data.marketBriefCards)) marketBriefCards = data.marketBriefCards;
+    if (data && data.sectors && Array.isArray(data.sectors.items)) sectors = data.sectors.items;
+    if (data && data.sectors && typeof data.sectors.summary === "string") sectorSummary = data.sectors.summary;
+
+    renderMacro();
+    renderMacro("#overviewMacroGrid");
+    renderMarketBrief();
+    renderSectorChart();
+  } catch (error) {
+    // Keep static fallback.
+  }
 }
 
 function companyEventImpact(company) {
@@ -2011,3 +2142,5 @@ document.querySelector("#applyRevaluation").addEventListener("click", applyReval
 
 render();
 loadUniverse();
+loadDashboard();
+setInterval(loadDashboard, 1000 * 60 * 15);
