@@ -21,6 +21,14 @@ FRED_CACHE = {}
 
 
 class ResearchDeskHandler(SimpleHTTPRequestHandler):
+    def end_headers(self):
+        parsed = urlparse(self.path)
+        if parsed.path in {"/", "/index.html"} or parsed.path.endswith((".html", ".js", ".css")) or parsed.path.startswith("/api/"):
+            self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+            self.send_header("Pragma", "no-cache")
+            self.send_header("Expires", "0")
+        super().end_headers()
+
     def do_HEAD(self):
         parsed = urlparse(self.path)
         if parsed.path in {"/api/news", "/api/indices", "/api/flows", "/api/universe", "/api/price", "/api/dashboard"}:

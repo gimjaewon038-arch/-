@@ -1142,6 +1142,7 @@ function matchesCompanySearch(company, query) {
   if (tokens.length > 1) {
     return tokens.every((token) => normalizedIdentity.includes(token));
   }
+  if (normalizedQuery.length < 3) return false;
   const text = companySearchText(company).toLowerCase();
   return text.includes(rawQuery) || normalizeSearchText(text).includes(normalizedQuery);
 }
@@ -1163,6 +1164,7 @@ function searchRelevance(company, query) {
   if (identity.includes(normalizedQuery)) return 850;
   if (tokens.length > 1 && tokens.every((token) => identity.includes(token))) return 800;
   if (ticker.startsWith(normalizedQuery)) return 760;
+  if (normalizedQuery.length < 3) return 0;
   if (fullText.includes(normalizedQuery)) return 300;
   return 0;
 }
