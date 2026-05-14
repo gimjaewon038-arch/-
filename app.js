@@ -153,6 +153,35 @@ const companies = [
   },
 ];
 
+const API_ORIGIN =
+  typeof window !== "undefined" && window.location && window.location.protocol === "file:"
+    ? "https://hojae-ya-hojae.onrender.com"
+    : "";
+
+function apiUrl(path) {
+  return `${API_ORIGIN}${path}`;
+}
+
+function readStoredJson(key, fallback) {
+  try {
+    if (typeof window === "undefined" || !window.localStorage) return fallback;
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (error) {
+    return fallback;
+  }
+}
+
+function writeStoredJson(key, value) {
+  try {
+    if (typeof window !== "undefined" && window.localStorage) {
+      window.localStorage.setItem(key, JSON.stringify(value));
+    }
+  } catch (error) {
+    // Keep in-memory data if browser storage is unavailable.
+  }
+}
+
 let macroState = {
   fedFunds: { label: "Fed Funds", value: "N/A", trend: "데이터 로딩", interpretation: "정책금리 변화는 성장주 할인율과 금융주 NIM에 영향을 줍니다." },
   tenYear: { label: "10Y Treasury", value: "N/A", trend: "데이터 로딩", interpretation: "장기금리 변화는 장기 성장주 밸류에이션 민감도를 키웁니다." },
@@ -160,85 +189,61 @@ let macroState = {
   ism: { label: "Cycle/Oil", value: "N/A", trend: "데이터 로딩", interpretation: "유가/경기 민감 변수는 섹터 로테이션과 마진에 영향을 줍니다." },
 };
 
-let macroReports = [
+const defaultMacroReports = [
   {
     name: "CPI",
-    date: "최근 발표",
-    value: "확인 중",
-    previous: "전월",
-    consensus: "시장 예상",
+    date: "로딩 중",
+    value: "N/A",
+    previous: "N/A",
+    consensus: "N/A",
     tone: "mixed",
-    verdict: "물가 방향 확인",
-    reason: "새 CPI 데이터가 없으면 기존 물가 판단을 유지합니다. 실제값이 예상보다 높으면 금리 부담, 낮으면 성장주 할인율 완화로 해석합니다.",
+    verdict: "최신 보고서 확인 중",
+    reason: "최신 CPI 데이터는 /api/dashboard에서 불러옵니다. 새 데이터가 없으면 마지막으로 저장된 실제 보고서를 유지합니다.",
   },
   {
     name: "Core CPI",
-    date: "최근 발표",
-    value: "확인 중",
-    previous: "전월",
-    consensus: "시장 예상",
+    date: "로딩 중",
+    value: "N/A",
+    previous: "N/A",
+    consensus: "N/A",
     tone: "mixed",
-    verdict: "근원물가 점검",
-    reason: "근원물가가 끈적하면 연준 완화 기대가 늦어져 고PER 성장주에 부담이 됩니다. 새 데이터가 없으면 기존 판단을 유지합니다.",
+    verdict: "최신 보고서 확인 중",
+    reason: "최신 Core CPI 데이터는 /api/dashboard에서 불러옵니다. 새 데이터가 없으면 마지막으로 저장된 실제 보고서를 유지합니다.",
   },
   {
     name: "PPI",
-    date: "최근 발표",
-    value: "확인 중",
-    previous: "전월",
-    consensus: "시장 예상",
+    date: "로딩 중",
+    value: "N/A",
+    previous: "N/A",
+    consensus: "N/A",
     tone: "mixed",
-    verdict: "마진 압력 점검",
-    reason: "생산자물가는 기업 원가와 마진 전망에 연결됩니다. 새 데이터가 없으면 기존 원가 압력 판단을 유지합니다.",
+    verdict: "최신 보고서 확인 중",
+    reason: "최신 PPI 데이터는 /api/dashboard에서 불러옵니다. 새 데이터가 없으면 마지막으로 저장된 실제 보고서를 유지합니다.",
   },
   {
     name: "Nonfarm Payrolls",
-    date: "최근 발표",
-    value: "확인 중",
-    previous: "이전치",
-    consensus: "시장 예상",
+    date: "로딩 중",
+    value: "N/A",
+    previous: "N/A",
+    consensus: "N/A",
     tone: "mixed",
-    verdict: "경기·임금 신호",
-    reason: "고용은 경기 침체 위험과 임금 물가를 동시에 보여줍니다. 새 데이터가 없으면 기존 경기 판단을 유지합니다.",
+    verdict: "최신 보고서 확인 중",
+    reason: "최신 고용 데이터는 /api/dashboard에서 불러옵니다. 새 데이터가 없으면 마지막으로 저장된 실제 보고서를 유지합니다.",
   },
   {
     name: "FOMC",
-    date: "최근 회의",
-    value: "동결/변경 확인",
-    previous: "이전 금리",
-    consensus: "시장 예상",
+    date: "로딩 중",
+    value: "N/A",
+    previous: "N/A",
+    consensus: "N/A",
     tone: "mixed",
-    verdict: "정책 톤 확인",
-    reason: "연준 발언과 점도표는 금리 민감주와 은행, 성장주의 외부 환경 점수에 반영됩니다. 새 이벤트가 없으면 기존 정책 톤을 유지합니다.",
+    verdict: "최신 보고서 확인 중",
+    reason: "최신 정책금리 데이터는 /api/dashboard에서 불러옵니다. 새 데이터가 없으면 마지막으로 저장된 실제 보고서를 유지합니다.",
   },
 ];
 
-let marketNewsCache = [
-  {
-    title: "Market keeps watching inflation, yields, and AI earnings leadership",
-    titleKo: "시장은 물가, 장기금리, AI 실적 주도주 흐름을 계속 주시",
-    source: "호재야호재",
-    published: "기존 뉴스",
-    url: "#",
-    image: "",
-  },
-  {
-    title: "Sector rotation stays split between energy strength and rate-sensitive growth pressure",
-    titleKo: "섹터 순환은 에너지 강세와 금리민감 성장주 부담으로 양분",
-    source: "호재야호재",
-    published: "기존 뉴스",
-    url: "#",
-    image: "",
-  },
-  {
-    title: "Macro data updates will refresh company scores only when new evidence is available",
-    titleKo: "새 근거가 있을 때만 매크로 데이터가 종목 점수에 반영",
-    source: "호재야호재",
-    published: "기존 뉴스",
-    url: "#",
-    image: "",
-  },
-];
+let macroReports = readStoredJson("hojae.macroReports", defaultMacroReports);
+let marketNewsCache = readStoredJson("hojae.marketNews", []);
 
 const nasdaq100Constituents = [
   ["AAPL", "Apple", "Technology Hardware"],
@@ -562,7 +567,7 @@ function mergeUniverseItems(items) {
 
 async function loadUniverse() {
   try {
-    const response = await fetch("/api/universe");
+    const response = await fetch(apiUrl("/api/universe"));
     if (!response.ok) throw new Error(`Universe request failed: ${response.status}`);
     const data = await response.json();
     mergeUniverseItems(data.items || []);
@@ -1572,7 +1577,11 @@ function renderHeadlines(container, items, listKey) {
 function renderMarketNewsFromCache() {
   const container = document.querySelector("#marketNews");
   if (!container) return;
-  renderHeadlines(container, marketNewsCache, "market");
+  if (marketNewsCache.length) {
+    renderHeadlines(container, marketNewsCache, "market");
+    return;
+  }
+  renderHeadlineState(container, "최신 시장 뉴스를 불러오는 중입니다.");
 }
 
 function renderIndicatorState(message) {
@@ -1583,7 +1592,7 @@ async function renderMarketIndicators() {
   const container = document.querySelector("#marketIndicators");
   renderIndicatorState("유명 지수와 시장 심리 데이터를 불러오는 중입니다.");
   try {
-    const response = await fetch("/api/indices");
+    const response = await fetch(apiUrl("/api/indices"));
     if (!response.ok) {
       throw new Error(`Indices request failed: ${response.status}`);
     }
@@ -1617,7 +1626,7 @@ async function renderMoneyFlow() {
   const container = document.querySelector("#moneyFlow");
   renderMoneyFlowState("오늘 자산군별 자금 이동 흐름을 계산하는 중입니다.");
   try {
-    const response = await fetch("/api/flows");
+    const response = await fetch(apiUrl("/api/flows"));
     if (!response.ok) {
       throw new Error(`Flows request failed: ${response.status}`);
     }
@@ -1675,7 +1684,7 @@ async function fetchNews(company, type) {
     params.set("name", company.name);
     params.set("sector", company.sector);
   }
-  const response = await fetch(`/api/news?${params.toString()}`);
+  const response = await fetch(apiUrl(`/api/news?${params.toString()}`));
   if (!response.ok) {
     throw new Error(`News request failed: ${response.status}`);
   }
@@ -1683,7 +1692,7 @@ async function fetchNews(company, type) {
 }
 
 async function fetchPriceSnapshot(company) {
-  const response = await fetch(`/api/price?ticker=${encodeURIComponent(company.ticker)}&range=${encodeURIComponent(selectedPriceRange)}`);
+  const response = await fetch(apiUrl(`/api/price?ticker=${encodeURIComponent(company.ticker)}&range=${encodeURIComponent(selectedPriceRange)}`));
   if (!response.ok) {
     throw new Error(`Price request failed: ${response.status}`);
   }
@@ -1957,6 +1966,7 @@ async function renderMarketNews() {
     const items = news.items || [];
     if (items.length) {
       marketNewsCache = items;
+      writeStoredJson("hojae.marketNews", marketNewsCache);
     }
     renderMarketNewsFromCache();
   } catch (error) {
@@ -2017,12 +2027,13 @@ function renderSectorChart() {
 
 async function loadDashboard() {
   try {
-    const response = await fetch("/api/dashboard");
+    const response = await fetch(apiUrl("/api/dashboard"));
     if (!response.ok) return;
     const data = await response.json();
     if (data && data.macroState) macroState = data.macroState;
     if (data && Array.isArray(data.macroReports) && hasUsableMacroReports(data.macroReports)) {
       macroReports = data.macroReports;
+      writeStoredJson("hojae.macroReports", macroReports);
     }
     if (data && Array.isArray(data.marketBriefCards)) marketBriefCards = data.marketBriefCards;
     if (data && data.sectors && Array.isArray(data.sectors.items)) sectors = data.sectors.items;
