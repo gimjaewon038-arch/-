@@ -1148,9 +1148,12 @@ function renderHomeSearch() {
     )
     .join("");
 
-  const query = input.value.trim().toLowerCase();
+  const query = input.value.trim();
   const matches = companies
-    .filter((company) => companyMatchesFilter(company, activeHomeFilter) && homeSearchMatches(company, query))
+    .filter((company) => {
+      const filterMatches = query ? true : companyMatchesFilter(company, activeHomeFilter);
+      return filterMatches && homeSearchMatches(company, query);
+    })
     .map((company) => ({ company, score: calculateComposite(companyScores(company)) }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 9);
@@ -2101,7 +2104,9 @@ function render() {
 }
 
 document.querySelector("#companySearch").addEventListener("input", renderCompanyList);
+document.querySelector("#companySearch").addEventListener("compositionend", renderCompanyList);
 document.querySelector("#globalSearch").addEventListener("input", renderHomeSearch);
+document.querySelector("#globalSearch").addEventListener("compositionend", renderHomeSearch);
 document.querySelector("#globalSearch").addEventListener("focus", renderHomeSearch);
 document.querySelector("#sidebarToggle").addEventListener("click", () => {
   const shell = document.querySelector(".app-shell");
