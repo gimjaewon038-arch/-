@@ -146,62 +146,62 @@ const companies = [
 ];
 
 let macroState = {
-  fedFunds: { label: "Fed Funds", value: "3.50-3.75%", trend: "동결 장기화", interpretation: "인하 기대가 뒤로 밀리며 고PER 성장주에는 부담, 은행 순이자마진에는 일부 방어 요인" },
-  tenYear: { label: "10Y Treasury", value: "4.45%", trend: "상승 압력", interpretation: "장기금리 재상승은 AI·소프트웨어·소형 성장주의 할인율 부담을 키움" },
-  cpi: { label: "CPI", value: "3.8%", trend: "예상 상회", interpretation: "에너지·주거비가 물가 부담을 키워 단기 위험선호를 낮추고 방어/에너지 선호를 강화" },
-  ism: { label: "Cycle/Oil", value: "WTI ~$100", trend: "유가 충격", interpretation: "에너지 섹터에는 우호적이지만 소비재와 운송·성장주 마진에는 부담" },
+  fedFunds: { label: "Fed Funds", value: "N/A", trend: "데이터 로딩", interpretation: "정책금리 변화는 성장주 할인율과 금융주 NIM에 영향을 줍니다." },
+  tenYear: { label: "10Y Treasury", value: "N/A", trend: "데이터 로딩", interpretation: "장기금리 변화는 장기 성장주 밸류에이션 민감도를 키웁니다." },
+  cpi: { label: "CPI", value: "N/A", trend: "데이터 로딩", interpretation: "물가가 끈적하면 금리 인하 기대가 늦어져 성장주에 부담이 될 수 있습니다." },
+  ism: { label: "Cycle/Oil", value: "N/A", trend: "데이터 로딩", interpretation: "유가/경기 민감 변수는 섹터 로테이션과 마진에 영향을 줍니다." },
 };
 
 let macroReports = [
   {
     name: "CPI",
-    date: "2026-05-12",
-    value: "3.8%",
-    previous: "3.5%",
-    consensus: "3.6%",
-    tone: "negative",
-    verdict: "시장에 부정적",
-    reason: "헤드라인 CPI가 예상치 3.6%와 전월 3.5%를 모두 웃돌았습니다. 인플레이션 재가열은 금리 인하 기대를 늦추고 성장주 할인율을 높입니다.",
+    date: "N/A",
+    value: "N/A",
+    previous: "N/A",
+    consensus: "N/A",
+    tone: "mixed",
+    verdict: "데이터 로딩",
+    reason: "매크로 리포트 데이터는 /api/dashboard에서 자동 갱신됩니다.",
   },
   {
     name: "Core CPI",
-    date: "2026-05-12",
-    value: "3.2%",
-    previous: "3.1%",
-    consensus: "3.1%",
-    tone: "negative",
-    verdict: "성장주에 부담",
-    reason: "근원 물가가 예상보다 끈적하면 연준이 빠르게 완화하기 어렵습니다. 고PER 기술주와 소형 성장주에는 멀티플 부담으로 반영했습니다.",
+    date: "N/A",
+    value: "N/A",
+    previous: "N/A",
+    consensus: "N/A",
+    tone: "mixed",
+    verdict: "데이터 로딩",
+    reason: "매크로 리포트 데이터는 /api/dashboard에서 자동 갱신됩니다.",
   },
   {
     name: "PPI",
-    date: "2026-05-11",
-    value: "2.9%",
-    previous: "2.6%",
-    consensus: "2.7%",
-    tone: "negative",
-    verdict: "마진에 부담",
-    reason: "생산자물가가 예상보다 높으면 기업 원가 부담이 커질 수 있습니다. 가격 전가력이 약한 소비재·산업재에는 수익성 압박입니다.",
+    date: "N/A",
+    value: "N/A",
+    previous: "N/A",
+    consensus: "N/A",
+    tone: "mixed",
+    verdict: "데이터 로딩",
+    reason: "매크로 리포트 데이터는 /api/dashboard에서 자동 갱신됩니다.",
   },
   {
     name: "Nonfarm Payrolls",
-    date: "2026-05-08",
-    value: "214K",
-    previous: "188K",
-    consensus: "175K",
+    date: "N/A",
+    value: "N/A",
+    previous: "N/A",
+    consensus: "N/A",
     tone: "mixed",
-    verdict: "해석 엇갈림",
-    reason: "고용은 경기 침체 우려를 낮추지만, 너무 강한 고용은 임금과 서비스 물가 압력을 남깁니다. 경기민감주는 일부 우호, 금리민감주는 부담입니다.",
+    verdict: "데이터 로딩",
+    reason: "매크로 리포트 데이터는 /api/dashboard에서 자동 갱신됩니다.",
   },
   {
     name: "FOMC",
-    date: "2026-05-06",
-    value: "3.50-3.75%",
-    previous: "3.50-3.75%",
-    consensus: "동결",
+    date: "N/A",
+    value: "N/A",
+    previous: "N/A",
+    consensus: "N/A",
     tone: "mixed",
-    verdict: "동결 장기화",
-    reason: "기준금리 동결 자체는 예상과 같지만, 물가 재상승으로 인하 시점이 뒤로 밀릴 가능성이 커졌습니다. 은행에는 일부 방어적이고 장기 성장주에는 부담입니다.",
+    verdict: "데이터 로딩",
+    reason: "매크로 리포트 데이터는 /api/dashboard에서 자동 갱신됩니다.",
   },
 ];
 
@@ -620,27 +620,27 @@ const scoringNarratives = {
 let marketBriefCards = [
   {
     label: "시장 레짐",
-    value: "인플레 재가열",
-    tone: "negative",
-    text: "April CPI 3.8%, 10년물 4.45%, 유가 100달러 부근을 반영해 고PER 성장주와 소비 민감주 할인율을 높였습니다.",
+    value: "데이터 로딩",
+    tone: "mixed",
+    text: "/api/dashboard에서 최신 매크로·지수 요약을 자동 갱신합니다.",
   },
   {
     label: "상대 강세",
-    value: "Energy / AI / Cyber",
-    tone: "positive",
-    text: "에너지는 유가와 현금흐름, AI·사이버보안은 실적 기대와 구조적 수요가 점수를 지지합니다.",
+    value: "데이터 로딩",
+    tone: "mixed",
+    text: "섹터 상대강도와 뉴스 흐름을 반영해 자동 갱신합니다.",
   },
   {
     label: "상대 약세",
-    value: "EV / Digital Health / High Growth",
-    tone: "negative",
-    text: "금리, 비용, GLP-1 전략 전환, 소비 둔화 리스크를 반영해 TSLA, HIMS, 장기 성장 바스켓을 보수적으로 조정했습니다.",
+    value: "데이터 로딩",
+    tone: "mixed",
+    text: "섹터 상대강도와 금리 민감도를 반영해 자동 갱신합니다.",
   },
   {
     label: "점수 반영",
-    value: "종목별 차등",
+    value: "뉴스+매크로",
     tone: "mixed",
-    text: "AAPL·OSCR·XOM은 상향 요인이 컸고, HIMS·TSLA·IONQ는 가이던스와 외부 환경 부담을 더 크게 반영했습니다.",
+    text: "상세 페이지에서 긍정/부정 요인을 분리해 점수 근거로 표시합니다.",
   },
 ];
 
@@ -827,15 +827,17 @@ function getNarrative(company) {
   const staticNarrative = scoringNarratives[company.ticker];
   if (staticNarrative) {
     return {
-      positives: [...staticNarrative.positives, live.company].filter(Boolean),
-      negatives: [...staticNarrative.negatives, live.related].filter(Boolean),
-      conflict: `${staticNarrative.conflict} 최신 헤드라인이 새로 들어오면 이 근거 영역과 점수 메모도 함께 갱신됩니다.`,
+      positives: [...staticNarrative.positives, ...(live.positives || [])].filter(Boolean),
+      negatives: [...staticNarrative.negatives, ...(live.negatives || [])].filter(Boolean),
+      conflict: `${staticNarrative.conflict} 최신 헤드라인이 들어오면 긍정/부정 근거를 분리해 점수 설명을 갱신합니다.`,
     };
   }
   return {
-    positives: [live.company || `${company.name}의 핵심 사업과 섹터 수요를 반영했습니다.`, fallback],
-    negatives: [live.related || "금리 상승, 물가 부담, 섹터 상대강도 변화는 외부 환경 점수에서 할인했습니다."],
-    conflict: `${company.name}의 개별 뉴스와 ${company.sector} 관련 섹터·매크로 뉴스를 나눠 반영했습니다. 종목 뉴스가 좋아도 관련 섹터 뉴스나 금리 환경이 불리하면 composite score 상승폭은 제한됩니다.`,
+    positives: [...(live.positives?.length ? live.positives : [`${company.name}의 핵심 사업과 섹터 수요를 반영했습니다.`]), fallback],
+    negatives: live.negatives?.length ? live.negatives : ["금리, 물가, 섹터 상대강도 변화는 외부 환경 점수의 할인 요인으로 반영됩니다."],
+    conflict:
+      live.conflict ||
+      `${company.name}의 개별 뉴스(실적/가이던스/공시)와 ${company.sector} 관련 섹터·매크로 요인을 분리해 반영했습니다. 긍정 뉴스가 있어도 금리/섹터 환경이 불리하면 composite score 상승폭은 제한됩니다.`,
   };
 }
 
@@ -847,18 +849,44 @@ function formatEvidenceHeadline(item) {
   return `"${title}" (${source}${published})`;
 }
 
+function classifyHeadlineTone(title = "") {
+  const text = String(title || "").toLowerCase();
+  const positive = ["beat", "beats", "raises", "raise", "guidance up", "upgrade", "record", "surge", "wins", "contract", "partnership", "approval", "reaffirm", "buyback"];
+  const negative = ["miss", "misses", "cuts", "cut", "guidance down", "downgrade", "lawsuit", "sec", "probe", "fraud", "recall", "layoff", "warns", "weak", "drops", "plunge"];
+  if (positive.some((term) => text.includes(term))) return "positive";
+  if (negative.some((term) => text.includes(term))) return "negative";
+  return "mixed";
+}
+
 function liveNewsNarrative(company) {
   const cache = newsEvidenceCache[company.ticker] || {};
-  const companyHeadline = cache.company?.[0];
-  const relatedHeadline = cache.related?.[0];
-  return {
-    company: companyHeadline
-      ? `최근 선택 종목 뉴스 ${formatEvidenceHeadline(companyHeadline)}를 회사 자체 점수의 직접 근거로 반영했습니다.`
-      : "",
-    related: relatedHeadline
-      ? `관련 섹터·매크로 뉴스 ${formatEvidenceHeadline(relatedHeadline)}를 외부 환경과 리스크 할인 근거로 반영했습니다.`
-      : "",
-  };
+  const companyItems = (cache.company || []).slice(0, 3);
+  const relatedItems = (cache.related || []).slice(0, 3);
+  const positives = [];
+  const negatives = [];
+
+  companyItems.forEach((item) => {
+    const tone = classifyHeadlineTone(item.titleKo || item.title || "");
+    const headline = formatEvidenceHeadline(item);
+    if (tone === "positive") positives.push(`회사 뉴스(긍정): ${headline}를 growth/guidance에 우호 요인으로 반영했습니다.`);
+    else if (tone === "negative") negatives.push(`회사 뉴스(부정): ${headline}를 guidance/company risk 할인 요인으로 반영했습니다.`);
+    else positives.push(`회사 뉴스: ${headline}를 점수 근거로 참고했습니다.`);
+  });
+
+  relatedItems.forEach((item) => {
+    const tone = classifyHeadlineTone(item.titleKo || item.title || "");
+    const headline = formatEvidenceHeadline(item);
+    if (tone === "positive") positives.push(`섹터/매크로(긍정): ${headline}를 external environment에 우호적으로 반영했습니다.`);
+    else if (tone === "negative") negatives.push(`섹터/매크로(부정): ${headline}를 macro/sector 점수 할인 근거로 반영했습니다.`);
+    else negatives.push(`섹터/매크로: ${headline}를 외부 환경 근거로 참고했습니다.`);
+  });
+
+  const conflict =
+    positives.length && negatives.length
+      ? "최신 헤드라인에서 긍정/부정 요인이 동시에 관측되어, 회사 점수와 외부 환경 점수를 분리해 상충 요인을 반영했습니다."
+      : "";
+
+  return { positives, negatives, conflict };
 }
 
 function refreshDetailRationale(company) {

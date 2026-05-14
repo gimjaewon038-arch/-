@@ -7,6 +7,8 @@ import html
 import json
 import os
 import re
+import time
+from datetime import datetime, timezone
 from io import StringIO
 import xml.etree.ElementTree as ET
 
@@ -14,12 +16,14 @@ import xml.etree.ElementTree as ET
 TRANSLATION_CACHE = {}
 IMAGE_CACHE = {}
 UNIVERSE_CACHE = None
+DASHBOARD_CACHE = {"expiresAt": 0.0, "payload": None}
+FRED_CACHE = {}
 
 
 class ResearchDeskHandler(SimpleHTTPRequestHandler):
     def do_HEAD(self):
         parsed = urlparse(self.path)
-        if parsed.path in {"/api/news", "/api/indices", "/api/flows", "/api/universe", "/api/price"}:
+        if parsed.path in {"/api/news", "/api/indices", "/api/flows", "/api/universe", "/api/price", "/api/dashboard"}:
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
@@ -43,6 +47,9 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
         if parsed.path == "/api/price":
             self.handle_price(parsed.query)
             return
+        if parsed.path == "/api/dashboard":
+            self.handle_dashboard()
+            return
         super().do_GET()
 
     def handle_news(self, query):
@@ -53,7 +60,7 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
         news_type = params.get("type", ["company"])[0].strip()
 
         if news_type == "market":
-            search = "April 2026 CPI oil prices Federal Reserve rates AI stocks energy sector rotation earnings guidance when:7d"
+            search = "CPI core CPI PPI jobs Fed rates yields oil sector rotation earnings guidance when:7d"
         elif news_type == "related":
             search = f'"{sector}" stocks OR "{sector}" earnings OR "{sector}" guidance macro rates policy when:30d'
         else:
@@ -103,10 +110,12 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
         with ThreadPoolExecutor(max_workers=12) as executor:
             quotes = list(executor.map(fetch_yahoo_quote, MARKET_SYMBOLS))
         fear_greed = fetch_fear_greed()
+        as_of = today_iso()
+        summary = build_market_summary(quotes, fear_greed)
         self.write_json(
             {
-                "asOf": "2026-05-13",
-                "summary": "Hot CPI와 유가 상승은 금리·물가 부담을 키우고, AI/나스닥과 에너지 강세는 위험선호를 지지합니다. Russell 2000과 고성장 ETF는 금리 민감도를 함께 확인합니다.",
+                "asOf": as_of,
+                "summary": summary,
                 "items": [fear_greed, *[quote for quote in quotes if quote]],
             }
         )
@@ -119,6 +128,7 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
         links = build_flow_links(weakest, strongest)
         self.write_json(
             {
+                "asOf": today_iso(),
                 "summary": build_flow_summary(weakest, strongest),
                 "outflows": weakest,
                 "inflows": strongest,
@@ -156,6 +166,10 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
             self.write_json({"error": "ticker is required"}, status=400)
             return
         self.write_json(fetch_price_snapshot(ticker, range_key))
+
+    def handle_dashboard(self):
+        payload = get_dashboard_payload()
+        self.write_json(payload)
 
 
 MARKET_SYMBOLS = [
@@ -244,6 +258,330 @@ BANK_PRICE_TARGETS = {
         {"bank": "Needham", "target": 700},
     ],
 }
+
+
+def today_iso():
+    return datetime.now(timezone.utc).date().isoformat()
+
+
+def cached(key, ttl_seconds, loader):
+    now = time.time()
+    entry = FRED_CACHE.get(key)
+    if entry and entry.get("expiresAt", 0) > now:
+        return entry.get("value")
+    value = loader()
+    FRED_CACHE[key] = {"expiresAt": now + ttl_seconds, "value": value}
+    return value
+
+
+def fetch_fred_csv(series_id, timeout=8):
+    try:
+        url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={quote_plus(series_id)}"
+        body = fetch_text(url, timeout=timeout)
+        rows = []
+        for line in body.splitlines()[1:]:
+            parts = line.split(",")
+            if len(parts) < 2:
+                continue
+            date = parts[0].strip()
+            value = parts[1].strip()
+            if value == "." or value == "":
+                continue
+            try:
+                rows.append((date, float(value)))
+            except Exception:
+                continue
+        return rows
+    except Exception:
+        return []
+
+
+def latest_fred_point(series_id):
+    rows = cached(f"fred:{series_id}", 60 * 60, lambda: fetch_fred_csv(series_id))
+    if not rows:
+        return None
+    return rows[-1]
+
+
+def fred_change(series_id, lookback=1):
+    rows = cached(f"fred:{series_id}", 60 * 60, lambda: fetch_fred_csv(series_id))
+    if not rows or len(rows) <= lookback:
+        return None
+    last_date, last_value = rows[-1]
+    prev_date, prev_value = rows[-1 - lookback]
+    return {"last": (last_date, last_value), "prev": (prev_date, prev_value)}
+
+
+def yoy_from_index_series(series_id):
+    rows = cached(f"fred:{series_id}", 60 * 60, lambda: fetch_fred_csv(series_id))
+    if not rows or len(rows) < 13:
+        return None
+    last_date, last_value = rows[-1]
+    prev_date, prev_value = rows[-13]
+    if prev_value == 0:
+        return None
+    return {"date": last_date, "value": (last_value / prev_value - 1) * 100, "previous": (rows[-14][1] / rows[-26][1] - 1) * 100 if len(rows) >= 26 else None}
+
+
+def build_macro_state():
+    fed = latest_fred_point("FEDFUNDS")
+    ten = latest_fred_point("DGS10")
+    wti = latest_fred_point("DCOILWTICO")
+    cpi_yoy = yoy_from_index_series("CPIAUCSL")
+    core_yoy = yoy_from_index_series("CPILFESL")
+
+    def fmt_pct(value):
+        return "N/A" if value is None else f"{value:.2f}%"
+
+    def fmt_level(value, unit=""):
+        return "N/A" if value is None else f"{value:.2f}{unit}"
+
+    macro = {
+        "fedFunds": {
+            "label": "Fed Funds (FRED)",
+            "value": fmt_level(fed[1], "%") if fed else "N/A",
+            "trend": "최신값",
+            "interpretation": "정책금리가 높게 유지되면 장기 성장주 할인율 부담이 커지고, 금융/현금흐름 방어주에는 상대적으로 우호적일 수 있습니다.",
+            "asOf": fed[0] if fed else None,
+            "source": "FRED",
+        },
+        "tenYear": {
+            "label": "10Y Treasury (FRED)",
+            "value": fmt_level(ten[1], "%") if ten else "N/A",
+            "trend": "최신값",
+            "interpretation": "장기금리 상승은 고PER 성장주·소형 성장주의 멀티플 부담으로 반영되는 경향이 있습니다.",
+            "asOf": ten[0] if ten else None,
+            "source": "FRED",
+        },
+        "cpi": {
+            "label": "CPI YoY (FRED)",
+            "value": fmt_pct(cpi_yoy["value"]) if cpi_yoy else "N/A",
+            "trend": "최신값",
+            "interpretation": "물가가 예상보다 끈적하면 금리 인하 기대가 늦춰져 성장주에는 부담, 인플레 헤지/에너지에는 일부 우호적으로 작용할 수 있습니다.",
+            "asOf": cpi_yoy["date"] if cpi_yoy else None,
+            "source": "FRED",
+        },
+        # UI 호환을 위해 기존 키(ism)를 유지합니다.
+        "ism": {
+            "label": "Cycle/Oil (FRED)",
+            "value": f"WTI {fmt_level(wti[1], '')}" if wti else "N/A",
+            "trend": "최신값",
+            "interpretation": "유가·경기 민감 변수는 에너지/원자재에는 우호적일 수 있지만 소비재·운송·마진 민감 업종에는 부담이 될 수 있습니다.",
+            "asOf": wti[0] if wti else None,
+            "source": "FRED",
+        },
+    }
+    return macro
+
+
+def build_macro_reports():
+    reports = []
+
+    def report_from_yoy(name, series_id, negative_bias=True):
+        yoy = yoy_from_index_series(series_id)
+        if not yoy:
+            return None
+        previous = yoy.get("previous")
+        delta = None if previous is None else yoy["value"] - previous
+        tone = "mixed"
+        verdict = "중립"
+        if delta is not None:
+            if negative_bias and delta > 0.05:
+                tone = "negative"
+                verdict = "물가 부담"
+            elif negative_bias and delta < -0.05:
+                tone = "positive"
+                verdict = "디스인플레"
+            elif (not negative_bias) and delta > 0.05:
+                tone = "positive"
+                verdict = "경기 강세"
+        reason = f"FRED 시계열({series_id})의 최근 12개월 변화율을 계산했습니다. 직전 관측치 대비 {'상승' if delta and delta>0 else '하락' if delta and delta<0 else '변화 제한'} 흐름을 반영합니다."
+        return {
+            "name": name,
+            "date": yoy["date"],
+            "value": f"{yoy['value']:.2f}%",
+            "previous": f"{previous:.2f}%" if previous is not None else "N/A",
+            "consensus": "N/A",
+            "tone": tone,
+            "verdict": verdict,
+            "reason": reason,
+            "source": "FRED",
+        }
+
+    cpi = report_from_yoy("CPI", "CPIAUCSL", negative_bias=True)
+    core = report_from_yoy("Core CPI", "CPILFESL", negative_bias=True)
+    ppi = report_from_yoy("PPI (Index YoY)", "PPIACO", negative_bias=True)
+
+    def report_level(name, series_id, unit="", negative_when_up=False):
+        change = fred_change(series_id, 1)
+        if not change:
+            return None
+        last_date, last_value = change["last"]
+        prev_date, prev_value = change["prev"]
+        delta = last_value - prev_value
+        tone = "mixed"
+        verdict = "중립"
+        if abs(delta) > 0.01:
+            if negative_when_up and delta > 0:
+                tone = "negative"
+                verdict = "부담 확대"
+            elif negative_when_up and delta < 0:
+                tone = "positive"
+                verdict = "완화"
+            elif (not negative_when_up) and delta > 0:
+                tone = "positive"
+                verdict = "강세"
+            elif (not negative_when_up) and delta < 0:
+                tone = "negative"
+                verdict = "약화"
+        reason = f"FRED 시계열({series_id})의 최근 관측치를 직전 관측치와 비교했습니다."
+        return {
+            "name": name,
+            "date": last_date,
+            "value": f"{last_value:.2f}{unit}" if unit else f"{last_value:.2f}",
+            "previous": f"{prev_value:.2f}{unit}" if unit else f"{prev_value:.2f}",
+            "consensus": "N/A",
+            "tone": tone,
+            "verdict": verdict,
+            "reason": reason,
+            "source": "FRED",
+        }
+
+    jobs = report_level("Unemployment Rate", "UNRATE", "%", negative_when_up=True)
+    fed = report_level("Fed Funds", "FEDFUNDS", "%", negative_when_up=True)
+
+    for item in [cpi, core, ppi, jobs, fed]:
+        if item:
+            reports.append(item)
+    return reports
+
+
+def build_sector_strength():
+    # Relative strength proxy: 3mo ETF return vs SPY return
+    sector_etfs = [
+        {"etf": "XLK", "name": "Technology", "rate": "High"},
+        {"etf": "XLF", "name": "Financials", "rate": "Mixed"},
+        {"etf": "XLE", "name": "Energy", "rate": "Low"},
+        {"etf": "XLY", "name": "Consumer Discretionary", "rate": "High"},
+        {"etf": "XLP", "name": "Consumer Staples", "rate": "Low"},
+        {"etf": "XLV", "name": "Healthcare", "rate": "Low"},
+        {"etf": "XLI", "name": "Industrials", "rate": "Medium"},
+        {"etf": "XLU", "name": "Utilities", "rate": "Low"},
+        {"etf": "ARKK", "name": "High Growth", "rate": "Very High"},
+        {"etf": "CIBR", "name": "Cybersecurity", "rate": "Medium"},
+        {"etf": "BOTZ", "name": "AI Software", "rate": "High"},
+    ]
+
+    def pct_return(series):
+        closes = series.get("close") or []
+        if len(closes) < 2:
+            return None
+        start = closes[0]
+        end = closes[-1]
+        if start in (None, 0):
+            return None
+        return (end / start - 1) * 100
+
+    symbols = ["SPY", *[item["etf"] for item in sector_etfs]]
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        data = dict(zip(symbols, executor.map(lambda s: fetch_yahoo_series(s, "3mo"), symbols)))
+
+    spy_ret = pct_return(data.get("SPY") or {}) or 0.0
+    scored = []
+    for item in sector_etfs:
+        ret = pct_return(data.get(item["etf"]) or {})
+        if ret is None:
+            relative = 55
+            cycle = "데이터 확인 필요"
+        else:
+            # Map relative return vs SPY into 0-100 score band.
+            diff = ret - spy_ret
+            relative = max(18, min(92, round(55 + diff * 2.2)))
+            cycle = f"3개월 상대수익 {diff:+.1f}pp (vs SPY)"
+        scored.append({**item, "relative": relative, "cycle": cycle})
+
+    strongest = sorted(scored, key=lambda x: x["relative"], reverse=True)[:2]
+    weakest = sorted(scored, key=lambda x: x["relative"])[:2]
+    summary = f"{today_iso()} 기준 섹터 상대강도: {', '.join([s['name'] for s in strongest])} 강세, {', '.join([s['name'] for s in weakest])} 약세(3개월 SPY 대비)."
+    return {"summary": summary, "items": scored}
+
+
+def build_market_brief(macro_state, sector_strength, indices_summary):
+    macro = macro_state.get("cpi", {})
+    rates = macro_state.get("tenYear", {})
+    oil = macro_state.get("ism", {})
+    return [
+        {
+            "label": "시장 레짐",
+            "value": "금리·물가 체크",
+            "tone": "mixed",
+            "text": f"CPI YoY {macro.get('value','N/A')} · 10Y {rates.get('value','N/A')} · {oil.get('value','N/A')} 를 기준으로 성장주 할인율과 섹터 로테이션을 함께 점검합니다.",
+        },
+        {
+            "label": "섹터 순환",
+            "value": "상대강도 기반",
+            "tone": "mixed",
+            "text": sector_strength.get("summary", "섹터 상대강도 데이터를 계산 중입니다."),
+        },
+        {
+            "label": "시장 요약",
+            "value": "지수·리스크",
+            "tone": "mixed",
+            "text": indices_summary or "지수 카드의 등락률과 공포·탐욕지수를 함께 해석합니다.",
+        },
+        {
+            "label": "점수 반영",
+            "value": "뉴스+매크로",
+            "tone": "mixed",
+            "text": "상세 페이지에서 회사 뉴스(실적/가이던스/공시)와 외부 환경(금리/정책/섹터)을 분리해 긍정·부정 요인을 점수에 반영합니다.",
+        },
+    ]
+
+
+def get_dashboard_payload():
+    now = time.time()
+    cached_payload = DASHBOARD_CACHE.get("payload")
+    if cached_payload and DASHBOARD_CACHE.get("expiresAt", 0) > now:
+        return cached_payload
+
+    # Build indices summary using the same logic as /api/indices but cheaper.
+    with ThreadPoolExecutor(max_workers=12) as executor:
+        quotes = list(executor.map(fetch_yahoo_quote, MARKET_SYMBOLS))
+    fear_greed = fetch_fear_greed()
+    indices_summary = build_market_summary(quotes, fear_greed)
+
+    macro_state = build_macro_state()
+    macro_reports = build_macro_reports()
+    sector_strength = build_sector_strength()
+    brief_cards = build_market_brief(macro_state, sector_strength, indices_summary)
+
+    payload = {
+        "asOf": today_iso(),
+        "macroState": macro_state,
+        "macroReports": macro_reports,
+        "marketBriefCards": brief_cards,
+        "sectors": {"summary": sector_strength.get("summary"), "items": sector_strength.get("items", [])},
+    }
+
+    DASHBOARD_CACHE["payload"] = payload
+    DASHBOARD_CACHE["expiresAt"] = now + 60 * 10
+    return payload
+
+
+def build_market_summary(quotes, fear_greed):
+    def find_value(name):
+        for item in quotes:
+            if item and item.get("name") == name:
+                return item.get("change") or ""
+        return ""
+
+    vix = find_value("VIX")
+    tnx = find_value("10Y Treasury Yield")
+    qqq = find_value("QQQ")
+    iwm = find_value("IWM")
+    oil = find_value("Oil / USO")
+    fg = fear_greed.get("value") if isinstance(fear_greed, dict) else None
+    return f"공포·탐욕 {fg or 'N/A'} · 10Y {tnx} · VIX {vix} · QQQ {qqq} · IWM {iwm} · Oil {oil} 흐름을 함께 확인합니다."
 
 
 def fetch_sp500_universe():
