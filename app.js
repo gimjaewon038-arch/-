@@ -1075,7 +1075,11 @@ function factorDetail(key, company, scores) {
 }
 
 function normalizeSearchText(value) {
-  return String(value || "").toLowerCase().replace(/\s+/g, "");
+  return String(value || "")
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[\u200B-\u200D\uFEFF]/g, "")
+    .replace(/[\s._·\-&/]+/g, "");
 }
 
 function koreanAliasesForCompany(company) {
@@ -1175,6 +1179,14 @@ function renderHomeSearch() {
       `,
     )
     .join("");
+}
+
+function handleHomeSearchInput() {
+  const input = document.querySelector("#globalSearch");
+  if (input && input.value.trim()) {
+    activeHomeFilter = "all";
+  }
+  renderHomeSearch();
 }
 
 function renderCompanyList() {
@@ -2103,10 +2115,10 @@ function render() {
   renderMemo(company, scores, composite);
 }
 
-document.querySelector("#companySearch").addEventListener("input", renderCompanyList);
-document.querySelector("#companySearch").addEventListener("compositionend", renderCompanyList);
-document.querySelector("#globalSearch").addEventListener("input", renderHomeSearch);
-document.querySelector("#globalSearch").addEventListener("compositionend", renderHomeSearch);
+["input", "keyup", "change", "search", "compositionend"].forEach((eventName) => {
+  document.querySelector("#companySearch").addEventListener(eventName, renderCompanyList);
+  document.querySelector("#globalSearch").addEventListener(eventName, handleHomeSearchInput);
+});
 document.querySelector("#globalSearch").addEventListener("focus", renderHomeSearch);
 document.querySelector("#sidebarToggle").addEventListener("click", () => {
   const shell = document.querySelector(".app-shell");
