@@ -274,7 +274,8 @@ const defaultMarketNews = [
   },
 ];
 
-const storedMacroReports = readStoredJson("hojae.macroReports", null);
+const MACRO_REPORT_STORAGE_KEY = "hojae.macroReports.releaseDate.v1";
+const storedMacroReports = readStoredJson(MACRO_REPORT_STORAGE_KEY, null);
 let macroReports = hasUsableMacroReports(storedMacroReports) ? storedMacroReports : defaultMacroReports;
 const storedMarketNews = readStoredJson("hojae.marketNews", null);
 let marketNewsCache = hasUsableMarketNews(storedMarketNews) ? storedMarketNews : defaultMarketNews;
@@ -2140,7 +2141,7 @@ async function loadDashboard() {
     if (data && data.macroState) macroState = data.macroState;
     if (data && Array.isArray(data.macroReports) && hasUsableMacroReports(data.macroReports)) {
       macroReports = data.macroReports;
-      writeStoredJson("hojae.macroReports", macroReports);
+      writeStoredJson(MACRO_REPORT_STORAGE_KEY, macroReports);
     }
     if (data && Array.isArray(data.marketBriefCards)) marketBriefCards = data.marketBriefCards;
     if (data && data.sectors && Array.isArray(data.sectors.items)) sectors = data.sectors.items;
