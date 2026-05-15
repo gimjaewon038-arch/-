@@ -19,6 +19,15 @@ UNIVERSE_CACHE = None
 DASHBOARD_CACHE = {"expiresAt": 0.0, "payload": None}
 FRED_CACHE = {}
 
+MARKET_NEWS_QUERIES = {
+    "all": '("stock market" OR "Wall Street" OR "S&P 500" OR Nasdaq) (Fed OR CPI OR earnings OR yields OR oil) when:3d',
+    "economy": '("US economy" OR CPI OR PPI OR jobs OR unemployment OR "Federal Reserve" OR "Treasury yields") markets when:7d',
+    "finance": '("bank stocks" OR "financial stocks" OR JPMorgan OR Goldman OR "regional banks" OR credit) rates earnings when:7d',
+    "technology": '(AI OR Nvidia OR semiconductors OR Nasdaq OR "tech stocks" OR software) earnings guidance when:7d',
+    "energy": '(oil OR crude OR OPEC OR energy stocks OR XLE OR natural gas) markets when:7d',
+    "healthcare": '("healthcare stocks" OR pharma OR biotech OR "managed care" OR FDA) earnings policy when:7d',
+}
+
 
 def get_indices_summary():
     with ThreadPoolExecutor(max_workers=12) as executor:
@@ -27,13 +36,14 @@ def get_indices_summary():
     return {"asOf": today_iso(), "summary": build_market_summary(quotes, fear_greed)}
 
 
-def build_google_news_search(news_type, ticker="", name="", sector=""):
+def build_google_news_search(news_type, ticker="", name="", sector="", category="all"):
     news_type = (news_type or "company").strip().lower()
+    category = (category or "all").strip().lower()
     ticker = (ticker or "").strip()
     name = (name or "").strip()
     sector = (sector or "").strip()
     if news_type == "market":
-        return "CPI core CPI PPI jobs unemployment Fed rates yields oil sector rotation earnings guidance when:7d"
+        return MARKET_NEWS_QUERIES.get(category, MARKET_NEWS_QUERIES["all"])
     if news_type == "related":
         if not sector:
             sector = "sector"
@@ -43,8 +53,8 @@ def build_google_news_search(news_type, ticker="", name="", sector=""):
     return f'"{ticker}" "{name}" stock earnings guidance OR SEC filing when:30d'
 
 
-def fetch_google_news_items(news_type, ticker="", name="", sector="", limit=6):
-    search = build_google_news_search(news_type, ticker=ticker, name=name, sector=sector)
+def fetch_google_news_items(news_type, ticker="", name="", sector="", category="all", limit=6):
+    search = build_google_news_search(news_type, ticker=ticker, name=name, sector=sector, category=category)
     url = (
         "https://news.google.com/rss/search?"
         f"q={quote_plus(search)}&hl=en-US&gl=US&ceid=US:en"
@@ -293,10 +303,12 @@ class ResearchDeskHandler(SimpleHTTPRequestHandler):
         name = params.get("name", [""])[0].strip()
         sector = params.get("sector", [""])[0].strip()
         news_type = params.get("type", ["company"])[0].strip()
+        category = params.get("category", ["all"])[0].strip().lower()
+        limit = 8 if news_type == "market" else 6
 
         try:
-            items = fetch_google_news_items(news_type, ticker=ticker, name=name, sector=sector, limit=6)
-            self.write_json({"items": items})
+            items = fetch_google_news_items(news_type, ticker=ticker, name=name, sector=sector, category=category, limit=limit)
+            self.write_json({"items": items, "category": category})
         except Exception as error:
             self.write_json({"items": [], "error": str(error)}, status=502)
 

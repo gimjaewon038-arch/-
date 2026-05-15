@@ -274,11 +274,149 @@ const defaultMarketNews = [
   },
 ];
 
+const marketNewsCategories = [
+  { key: "all", label: "전체" },
+  { key: "economy", label: "경제" },
+  { key: "finance", label: "금융" },
+  { key: "technology", label: "기술·AI" },
+  { key: "energy", label: "에너지" },
+  { key: "healthcare", label: "헬스케어" },
+];
+
+const defaultMarketNewsByCategory = {
+  all: defaultMarketNews,
+  economy: [
+    {
+      title: "Inflation and yields remain the main macro pressure points for equities",
+      titleKo: "물가와 국채금리가 주식시장 핵심 압박 요인으로 유지",
+      source: "전일 경제 요약",
+      published: "2026-05-13",
+      url: "#",
+      image: "",
+    },
+    {
+      title: "Jobs data keeps soft-landing hopes alive while delaying rate-cut confidence",
+      titleKo: "고용 지표는 연착륙 기대를 살리지만 금리인하 확신은 지연",
+      source: "전일 경제 요약",
+      published: "2026-05-13",
+      url: "#",
+      image: "",
+    },
+    {
+      title: "Fed path stays data-dependent after sticky price reports",
+      titleKo: "끈적한 물가 지표 이후 연준 경로는 데이터 의존 흐름 지속",
+      source: "전일 경제 요약",
+      published: "2026-05-13",
+      url: "#",
+      image: "",
+    },
+  ],
+  finance: [
+    {
+      title: "Higher yields support bank income but credit risk keeps valuation capped",
+      titleKo: "높은 금리는 은행 이자수익에 우호적이나 신용 리스크가 밸류에이션을 제한",
+      source: "전일 금융 요약",
+      published: "2026-05-13",
+      url: "#",
+      image: "",
+    },
+    {
+      title: "Regional banks remain sensitive to deposit costs and commercial real estate",
+      titleKo: "지역은행은 예금 비용과 상업용 부동산 리스크에 민감",
+      source: "전일 금융 요약",
+      published: "2026-05-13",
+      url: "#",
+      image: "",
+    },
+    {
+      title: "Capital markets activity helps brokers while rate volatility stays high",
+      titleKo: "자본시장 활동은 브로커리지에 우호적이나 금리 변동성은 높게 유지",
+      source: "전일 금융 요약",
+      published: "2026-05-13",
+      url: "#",
+      image: "",
+    },
+  ],
+  technology: [
+    defaultMarketNews[2],
+    {
+      title: "Semiconductor leadership remains tied to AI capex and earnings guidance",
+      titleKo: "반도체 주도력은 AI 설비투자와 실적 가이던스에 좌우",
+      source: "전일 기술 요약",
+      published: "2026-05-13",
+      url: "#",
+      image: "",
+    },
+    {
+      title: "Long-duration software names stay vulnerable to higher discount rates",
+      titleKo: "장기 성장 소프트웨어주는 높은 할인율에 취약",
+      source: "전일 기술 요약",
+      published: "2026-05-13",
+      url: "#",
+      image: "",
+    },
+  ],
+  energy: [
+    defaultMarketNews[1],
+    {
+      title: "Oil-sensitive equities keep defensive appeal during inflation scares",
+      titleKo: "유가 민감주는 인플레 우려 구간에서 방어 매력을 유지",
+      source: "전일 에너지 요약",
+      published: "2026-05-13",
+      url: "#",
+      image: "",
+    },
+    {
+      title: "Refining margins and policy headlines remain key swing factors",
+      titleKo: "정제마진과 정책 헤드라인이 에너지주의 핵심 변동 요인",
+      source: "전일 에너지 요약",
+      published: "2026-05-13",
+      url: "#",
+      image: "",
+    },
+  ],
+  healthcare: [
+    {
+      title: "Healthcare holds defensive appeal but policy risk remains stock-specific",
+      titleKo: "헬스케어는 방어 매력이 있으나 정책 리스크는 종목별로 차별화",
+      source: "전일 헬스케어 요약",
+      published: "2026-05-13",
+      url: "#",
+      image: "",
+    },
+    {
+      title: "Biotech sentiment depends on funding conditions and trial catalysts",
+      titleKo: "바이오테크 심리는 자금조달 환경과 임상 이벤트에 좌우",
+      source: "전일 헬스케어 요약",
+      published: "2026-05-13",
+      url: "#",
+      image: "",
+    },
+    {
+      title: "Managed care names remain exposed to medical cost trends",
+      titleKo: "관리의료주는 의료비 추세에 계속 노출",
+      source: "전일 헬스케어 요약",
+      published: "2026-05-13",
+      url: "#",
+      image: "",
+    },
+  ],
+};
+
 const MACRO_REPORT_STORAGE_KEY = "hojae.macroReports.releaseDate.v1";
 const storedMacroReports = readStoredJson(MACRO_REPORT_STORAGE_KEY, null);
 let macroReports = hasUsableMacroReports(storedMacroReports) ? storedMacroReports : defaultMacroReports;
-const storedMarketNews = readStoredJson("hojae.marketNews", null);
-let marketNewsCache = hasUsableMarketNews(storedMarketNews) ? storedMarketNews : defaultMarketNews;
+const MARKET_NEWS_STORAGE_KEY = "hojae.marketNews.byCategory.v1";
+const storedMarketNews = readStoredJson(MARKET_NEWS_STORAGE_KEY, null);
+let marketNewsCache =
+  storedMarketNews && !Array.isArray(storedMarketNews) && typeof storedMarketNews === "object"
+    ? storedMarketNews
+    : {};
+marketNewsCategories.forEach((category) => {
+  if (!hasUsableMarketNews(marketNewsCache[category.key])) {
+    marketNewsCache[category.key] = defaultMarketNewsByCategory[category.key] || defaultMarketNews;
+  }
+});
 
 const nasdaq100Constituents = [
   ["AAPL", "Apple", "Technology Hardware"],
@@ -865,6 +1003,8 @@ let newsEvidenceCache = {};
 let universeLoaded = false;
 let selectedPriceRange = "3M";
 let activeHomeFilter = "all";
+let activeMarketNewsCategory = "all";
+let marketNewsWarmStarted = false;
 const companyFactorKeys = ["growth", "profitability", "fundamentals", "guidance", "companyRisk"];
 const environmentFactorKeys = ["macroRegime", "rateSensitivity", "policyImpact", "sectorMomentum", "cycleFit"];
 const homeFilters = [
@@ -1678,14 +1818,38 @@ function renderHeadlines(container, items, listKey) {
   container.innerHTML = `${headlines}${toggle}`;
 }
 
+function renderMarketNewsTabs() {
+  return `
+    <div class="news-tabs" aria-label="시장 뉴스 카테고리">
+      ${marketNewsCategories
+        .map(
+          (category) => `
+            <button class="news-tab ${category.key === activeMarketNewsCategory ? "active" : ""}" type="button" data-market-news-category="${escapeHtml(category.key)}">
+              ${escapeHtml(category.label)}
+            </button>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function renderMarketNewsHeadlines(container, items, listKey) {
+  const shell = document.createElement("div");
+  renderHeadlines(shell, items, listKey);
+  container.classList.toggle("collapsed", shell.classList.contains("collapsed"));
+  container.innerHTML = `${renderMarketNewsTabs()}${shell.innerHTML}`;
+}
+
 function renderMarketNewsFromCache() {
   const container = document.querySelector("#marketNews");
   if (!container) return;
-  if (marketNewsCache.length) {
-    renderHeadlines(container, marketNewsCache, "market");
+  const items = marketNewsCache[activeMarketNewsCategory] || marketNewsCache.all || defaultMarketNews;
+  if (hasUsableMarketNews(items)) {
+    renderMarketNewsHeadlines(container, items, `market-${activeMarketNewsCategory}`);
     return;
   }
-  renderHeadlineState(container, "최신 시장 뉴스를 불러오는 중입니다.");
+  container.innerHTML = `${renderMarketNewsTabs()}<div class="headline-placeholder">최신 시장 뉴스를 불러오는 중입니다.</div>`;
 }
 
 function renderIndicatorState(message) {
@@ -1783,8 +1947,11 @@ async function renderMoneyFlow() {
   }
 }
 
-async function fetchNews(company, type) {
+async function fetchNews(company, type, category = "") {
   const params = new URLSearchParams({ type });
+  if (category) {
+    params.set("category", category);
+  }
   if (company) {
     params.set("ticker", company.ticker);
     params.set("name", company.name);
@@ -2063,22 +2230,36 @@ async function renderPriceSnapshot(company) {
 
 async function renderMarketNews() {
   const container = document.querySelector("#marketNews");
-  if (!marketNewsCache.length) {
-    renderHeadlineState(container, "시장 전체 최신 뉴스 헤드라인을 불러오는 중입니다.");
-  } else {
-    renderMarketNewsFromCache();
-  }
+  const category = activeMarketNewsCategory;
+  renderMarketNewsFromCache();
   try {
-    const news = await fetchNews(null, "market");
+    const news = await fetchNews(null, "market", category);
     const items = news.items || [];
     if (hasUsableMarketNews(items)) {
-      marketNewsCache = items;
-      writeStoredJson("hojae.marketNews", marketNewsCache);
+      marketNewsCache[category] = items;
+      writeStoredJson(MARKET_NEWS_STORAGE_KEY, marketNewsCache);
     }
-    renderMarketNewsFromCache();
+    if (activeMarketNewsCategory === category) renderMarketNewsFromCache();
   } catch (error) {
     renderMarketNewsFromCache();
   }
+  warmMarketNewsCategories();
+}
+
+async function warmMarketNewsCategories() {
+  if (marketNewsWarmStarted) return;
+  marketNewsWarmStarted = true;
+  const categories = marketNewsCategories.map((category) => category.key).filter((key) => key !== activeMarketNewsCategory);
+  await Promise.allSettled(
+    categories.map(async (category) => {
+      const news = await fetchNews(null, "market", category);
+      const items = news.items || [];
+      if (hasUsableMarketNews(items)) {
+        marketNewsCache[category] = items;
+      }
+    }),
+  );
+  writeStoredJson(MARKET_NEWS_STORAGE_KEY, marketNewsCache);
 }
 
 async function renderLatestNews(company) {
@@ -2417,6 +2598,16 @@ document.addEventListener("click", (event) => {
     const key = toggle.dataset.newsToggle;
     expandedNewsLists[key] = !expandedNewsLists[key];
     render();
+    return;
+  }
+
+  const marketNewsCategory = event.target.closest("[data-market-news-category]");
+  if (marketNewsCategory) {
+    event.preventDefault();
+    event.stopPropagation();
+    activeMarketNewsCategory = marketNewsCategory.dataset.marketNewsCategory || "all";
+    expandedNewsLists[`market-${activeMarketNewsCategory}`] = false;
+    renderMarketNews();
     return;
   }
 

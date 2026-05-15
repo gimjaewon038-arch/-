@@ -1464,6 +1464,31 @@ body:has(.app-shell:not(.sidebar-closed)) .sidebar-toggle {
   gap: 9px;
 }
 
+.news-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.news-tab {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #334155;
+  padding: 7px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.news-tab:hover,
+.news-tab.active {
+  border-color: #9bcac3;
+  background: #e5f5f1;
+  color: var(--accent-strong);
+}
+
 .headline-list.collapsed .headline:nth-of-type(n + 4) {
   display: none;
 }
