@@ -2292,25 +2292,94 @@ async function renderLatestNews(company) {
 
 function renderSectorChart() {
   const chart = document.querySelector("#sectorChart");
+  if (!chart) return;
+  const sorted = [...sectors].sort((a, b) => (b.relative || 0) - (a.relative || 0));
+  const enriched = sorted.map((sector, index) => {
+    const relative = Number(sector.relative) || 55;
+    const cycleText = sector.cycle || "";
+    const match = cycleText.match(/([+-]?\d+(?:\.\d+)?)pp/);
+    const relativeReturn = match ? Number(match[1]) : (relative - 55) / 2.2;
+    const rateTilt = sector.rate === "Very High" ? -8 : sector.rate === "High" ? -4 : sector.rate === "Low" ? 5 : 0;
+    const momentum = clampNumber(Math.round(relative + relativeReturn * 1.6 + rateTilt - index * 1.4), 12, 88);
+    const state =
+      relative >= 60 && momentum >= 55
+        ? "leading"
+        : relative >= 60 && momentum < 55
+          ? "weakening"
+          : relative < 60 && momentum >= 55
+            ? "improving"
+            : "lagging";
+    const stateLabel = {
+      leading: "주도",
+      weakening: "둔화",
+      improving: "개선",
+      lagging: "약세",
+    }[state];
+    return { ...sector, relative, relativeReturn, momentum, state, stateLabel };
+  });
+  const stateGroups = {
+    leading: enriched.filter((item) => item.state === "leading").slice(0, 3),
+    weakening: enriched.filter((item) => item.state === "weakening").slice(0, 3),
+    improving: enriched.filter((item) => item.state === "improving").slice(0, 3),
+    lagging: enriched.filter((item) => item.state === "lagging").slice(0, 3),
+  };
+  const renderGroup = (key, title, helper) => `
+    <div class="rotation-zone ${key}">
+      <div class="zone-heading">
+        <strong>${escapeHtml(title)}</strong>
+        <span>${escapeHtml(helper)}</span>
+      </div>
+      ${stateGroups[key].length
+        ? stateGroups[key]
+            .map(
+              (item) => `
+                <span class="rotation-chip" title="${escapeHtml(item.name)} · ${escapeHtml(item.cycle)} · 점수 ${item.relative}">
+                  ${escapeHtml(item.etf)}
+                </span>
+              `,
+            )
+            .join("")
+        : `<em>해당 없음</em>`}
+    </div>
+  `;
+  const rows = enriched
+    .map(
+      (item) => `
+        <tr>
+          <td><strong>${escapeHtml(item.etf)}</strong><span>${escapeHtml(item.name)}</span></td>
+          <td>${item.relativeReturn >= 0 ? "+" : ""}${item.relativeReturn.toFixed(1)}pp</td>
+          <td>${item.momentum}</td>
+          <td><span class="rotation-badge ${escapeHtml(item.state)}">${escapeHtml(item.stateLabel)}</span></td>
+        </tr>
+      `,
+    )
+    .join("");
   chart.innerHTML = `
     <p class="flow-summary">${escapeHtml(sectorSummary)}</p>
-  `;
-  [...sectors]
-    .sort((a, b) => b.relative - a.relative)
-    .forEach((sector) => {
-      const row = document.createElement("div");
-      const tone = sector.relative >= 68 ? "strong" : sector.relative >= 58 ? "neutral" : "weak";
-      row.className = `sector-bar ${tone}`;
-      row.innerHTML = `
-      <strong>${sector.etf}</strong>
-      <div class="bar-track">
-        <span style="width:${sector.relative}%"></span>
-        <em>${sector.name} · ${sector.cycle}</em>
+    <section class="rotation-board" aria-label="섹터 로테이션 4분면">
+      ${renderGroup("improving", "개선", "약세에서 회복")}
+      ${renderGroup("leading", "주도", "상대강도와 모멘텀 우위")}
+      ${renderGroup("lagging", "약세", "상대강도와 모멘텀 부진")}
+      ${renderGroup("weakening", "둔화", "강하지만 속도 둔화")}
+    </section>
+    <section class="sector-rank">
+      <div class="sector-rank-head">
+        <strong>섹터 순위</strong>
+        <span>3개월 SPY 대비 · 모멘텀 proxy</span>
       </div>
-      <em>${sector.relative}</em>
-    `;
-      chart.appendChild(row);
-    });
+      <table>
+        <thead>
+          <tr>
+            <th>섹터</th>
+            <th>상대수익</th>
+            <th>모멘텀</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </section>
+  `;
 }
 
 async function loadDashboard() {
